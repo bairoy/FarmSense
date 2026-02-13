@@ -6,14 +6,24 @@ build/
 # Logs
 logs
 *.log
+npm-debug.log*
 
-# Environment files
+# Environment
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 
 # OS
 .DS_Store
 
 # IDE
 .vscode/
+.idea/
+
+# Supabase
+backend/supabase/.temp/
+backend/supabase/.branches/
+backend/supabase/.cache/
+
+# Misc
+coverage/
