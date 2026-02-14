@@ -4,6 +4,7 @@ import fieldRoutes from "./modules/fields/field.routes.ts";
 import cropRoutes from "./modules/crops/crop.routes.ts"
 import cropStateRoutes from "./modules/crop-state/cropState.routes.ts"
 import irrigationRoutes from "./modules/irrigation/irrigation.routes.ts";
+import fertilizerRoutes from "./modules/fertilizer/fertilizer.routes.ts";
 
 const app = express();
 app.use(express.json());
@@ -13,6 +14,7 @@ app.use("/api/fields",fieldRoutes);
 app.use("/api/crops",cropRoutes);
 app.use("/api/crop-states",cropStateRoutes);
 app.use("/api/irrigation",irrigationRoutes);
+app.use("/api/fertilizer",fertilizerRoutes);
 
 app.use((err: any, req: any, res: any, next: any) => {
   if (err instanceof SyntaxError && 'body' in err) {
