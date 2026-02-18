@@ -36,3 +36,20 @@ export const loginHandler = async(req:Request,res:Response)=>{
     res.status(400).json({error:err.message})
   }
 }
+
+export const refreshHandler = async(req:Request,res:Response)=>{
+try{
+  const {refreshToken} = req.body;
+
+  if(!refreshToken){
+    return res.status(400).json({error: "Refresh token required"});
+  }
+  const data = await authService.refreshSession(refreshToken);
+
+  res.json(data);
+}
+catch(err:any){
+  res.status(401).json({error: err.message});
+}
+
+};

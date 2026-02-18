@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "../../config/supabase.ts";
+import { supabase } from "../../config/supabase.ts";
 
 export const signUp = async (name:string,email: string, password: string) => {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
@@ -31,4 +32,18 @@ export const signIn = async (email: string, password: string) => {
     accessToken:data.session?.access_token,
     refreshToken:data.session?.refresh_token
   };
+};
+
+export const refreshSession = async(refreshToken:string)=>{
+  const{data,error} = await supabase.auth.refreshSession({
+    refresh_token:refreshToken,
+  });
+  if(error || !data.session){
+    throw new Error("Invalid refresh token");
+  }
+
+  return{
+    accessToken: data.session.access_token,
+    refreshToken:data.session.refresh_token,
+  }
 };
