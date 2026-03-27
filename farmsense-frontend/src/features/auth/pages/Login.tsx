@@ -1,74 +1,65 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../services/api";
+import { api } from "../../../services/api"
+import { useAuthStore } from "../../../store/authStore"
 
-export default function Register() {
+export default function Login() {
   const navigate = useNavigate();
+  const login = useAuthStore((state) => state.login);
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      await api.post("/auth/signup", form);
+      const res = await api.post("/auth/login", { email, password });
 
-      alert("Account created successfully");
-      navigate("/login");
+      const { user, accessToken, refreshToken } = res.data;
+
+      login(user, accessToken, refreshToken);
+
+      navigate("/");
     } catch (error: any) {
-      alert(error.response?.data?.message || "Signup failed");
+      alert(error.response?.data?.message || "Login failed");
     }
   };
+
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-green-50">
       <div className="bg-white p-8 rounded shadow w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
-            name="name"
-            placeholder="Full Name"
-            className="w-full border p-3 rounded"
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="email"
             type="email"
             placeholder="Email"
             className="w-full border p-3 rounded"
-            onChange={handleChange}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
 
           <input
-            name="password"
             type="password"
             placeholder="Password"
             className="w-full border p-3 rounded"
-            onChange={handleChange}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           <button className="w-full bg-green-600 text-white p-3 rounded">
-            Register
+            Login
           </button>
         </form>
 
         <p className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link to="/login" className="text-green-600">
-            Login
+          Don’t have an account?{" "}
+          <Link to="/register" className="text-green-600">
+            Register
           </Link>
         </p>
       </div>

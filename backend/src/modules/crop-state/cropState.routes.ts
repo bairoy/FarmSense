@@ -4,8 +4,11 @@ import * as cropStateController from "./cropState.controller.ts"
 
 const router = Router();
 router.use(requireAuth);
-router.post("/",cropStateController.createCropStateHandler);
+// router.post("/",cropStateController.createCropStateHandler);
+router.get("/:cropId/current", cropStateController.getCurrentCropStateHandler);
+router.get("/timeline/:cropId", cropStateController.getCropTimelineHandler);
 router.get("/:cropId",cropStateController.getCropStatesHandler);
+
 router.delete("/state/:stateId",cropStateController.deleteCropStateHandler);
 
 export default router;
