@@ -27,7 +27,7 @@
 - Access comprehensive dashboards for better decision-making
 - Maintain detailed records for compliance and optimization
 
-The platform is built with a **modern full-stack architecture** using TypeScript, Express.js for the backend, and React for the frontend, with Supabase as the database and authentication provider.
+The platform is built with a **modern full-stack architecture** using TypeScript, Express.js for the backend, React for the frontend, and Python (FastAPI + PyTorch) for AI-powered disease detection, with Supabase as the database and authentication provider.
 
 ---
 
@@ -145,6 +145,12 @@ FarmSense/
 │   ├── tsconfig.json
 │   └── package.json
 │
+├── ai/                              # AI Service for Disease Detection
+│   ├── api.py                       # FastAPI application
+│   ├── disease_model.py             # PyTorch model integration
+│   ├── rice_model.pth               # Trained PyTorch ResNet18 model
+│   └── requirements.txt             # Python dependencies
+│
 └── README.md
 ```
 
@@ -163,6 +169,13 @@ FarmSense/
 - **CORS:** cors ^2.8.6 - Cross-origin request handling
 - **Environment:** dotenv ^17.2.3 - Environment variable management
 - **Dev Tools:** Nodemon - Auto-restart during development
+
+### **AI Service**
+
+- **Language:** Python 3.10+
+- **Framework:** FastAPI - High-performance API framework
+- **Machine Learning:** PyTorch & Torchvision - Deep learning for computer vision
+- **Image Processing:** Pillow (PIL) - Image manipulation
 
 ### **Frontend**
 
@@ -223,6 +236,34 @@ FarmSense/
    npm run dev
    ```
    The API will run on `http://localhost:3000`
+
+### **AI Service Setup**
+
+1. **Navigate to ai directory:**
+
+   ```bash
+   cd ai
+   ```
+
+2. **Create and activate a virtual environment (optional but recommended):**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\\Scripts\\activate
+   ```
+
+3. **Install dependencies:**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Start the FastAPI server:**
+
+   ```bash
+   uvicorn api:app --reload --port 8000
+   ```
+   The AI API will run on `http://localhost:8000` (API docs at `http://localhost:8000/docs`)
 
 ### **Frontend Setup**
 
@@ -307,7 +348,13 @@ GET    /api/fertilizer/:cropId      - Get fertilizer history
 DELETE /api/fertilizer/:fertilizerId - Remove fertilizer record
 ```
 
-**All endpoints require JWT authentication** via `Authorization: Bearer <token>` header.
+### **AI Crop Analysis (FastAPI)**
+
+```
+POST   /detect-disease              - Analyze crop image (Requires form-data with 'file')
+```
+
+**Backend endpoints require JWT authentication** via `Authorization: Bearer <token>` header.
 
 ---
 
@@ -324,6 +371,9 @@ DELETE /api/fertilizer/:fertilizerId - Remove fertilizer record
 - [x] Basic CRUD operations for all modules
 - [x] Input validation with Zod
 - [x] Responsive UI with Tailwind CSS
+- [x] **AI-Powered Crop Health Detection (PyTorch & FastAPI)**
+  - Crop disease detection (Brown Spot, Hispa, Leaf Blast)
+  - Confidence scoring for predictions
 
 ### **Version 1.1 - Planned** 🔄
 
@@ -333,11 +383,10 @@ DELETE /api/fertilizer/:fertilizerId - Remove fertilizer record
   - Yield predictions based on history
   - Field-wise performance comparison
 
-- [ ] **AI-Powered Crop Health Detection**
-  - Real-time image analysis using computer vision
-  - Disease detection and alerts
-  - Automated health status updates
-  - Confidence scoring and recommendations
+- [ ] **AI Integration Expansion**
+  - Automated health status updates in UI
+  - Integration of FastAPI service with backend logic
+  - Broader crop disease coverage
 
 - [ ] **Mobile Responsive Improvements**
   - Mobile-optimized interface
