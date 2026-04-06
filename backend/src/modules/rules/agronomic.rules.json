@@ -1,0 +1,128 @@
+[
+  {
+    "crop": "rice",
+    "phase": "establishment",
+    "water": {
+      "min_soil_moisture": 60,
+      "critical_moisture": 45
+    },
+    "temperature": {
+      "heat_stress": 38
+    },
+    "humidity": {
+      "disease_risk": 85
+    }
+  },
+  {
+    "crop": "rice",
+    "phase": "vegetative",
+    "water": {
+      "min_soil_moisture": 55,
+      "critical_moisture": 40
+    },
+    "temperature": {
+      "heat_stress": 35
+    },
+    "humidity": {
+      "disease_risk": 80
+    }
+  },
+  {
+    "crop": "rice",
+    "phase": "reproductive",
+    "water": {
+      "min_soil_moisture": 50,
+      "critical_moisture": 35
+    },
+    "temperature": {
+      "heat_stress": 34
+    },
+    "humidity": {
+      "disease_risk": 85
+    }
+  },
+  {
+    "crop": "rice",
+    "phase": "maturity",
+    "water": {
+      "min_soil_moisture": 40,
+      "critical_moisture": 30
+    },
+    "temperature": {
+      "heat_stress": 36
+    },
+    "humidity": {
+      "disease_risk": 90
+    }
+  },
+  {
+    "crop": "wheat",
+    "phase": "establishment",
+    "water": {
+      "min_soil_moisture": 50,
+      "critical_moisture": 35
+    },
+    "temperature": {
+      "heat_stress": 32
+    },
+    "humidity": {
+      "disease_risk": 80
+    }
+  },
+  {
+    "crop": "wheat",
+    "phase": "vegetative",
+    "water": {
+      "min_soil_moisture": 45,
+      "critical_moisture": 30
+    },
+    "temperature": {
+      "heat_stress": 30
+    },
+    "humidity": {
+      "disease_risk": 75
+    }
+  },
+  {
+    "crop": "wheat",
+    "phase": "reproductive",
+    "water": {
+      "min_soil_moisture": 40,
+      "critical_moisture": 25
+    },
+    "temperature": {
+      "heat_stress": 28
+    },
+    "humidity": {
+      "disease_risk": 78
+    }
+  },
+  {
+    "crop": "wheat",
+    "phase": "grain_filling",
+    "water": {
+      "min_soil_moisture": 35,
+      "critical_moisture": 20
+    },
+    "temperature": {
+      "heat_stress": 30
+    },
+    "humidity": {
+      "disease_risk": 80
+    }
+  },
+  {
+    "crop": "wheat",
+    "phase": "maturity",
+    "water": {
+      "min_soil_moisture": 30,
+      "critical_moisture": 15
+    },
+    "temperature": {
+      "heat_stress": 32
+    },
+    "humidity": {
+      "disease_risk": 85
+    }
+  }
+]

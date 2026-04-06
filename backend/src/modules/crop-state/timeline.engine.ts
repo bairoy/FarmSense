@@ -1,7 +1,7 @@
 import { differenceInDays, addDays } from "date-fns";
 import { getHistoricalWeather } from "../../utils/weather.service.ts";
 import { supabase } from "../../config/supabase.ts";
-
+import { evaluateAgronomicState } from "../rules/agronomic.engine.ts";
 function getPhase(cropType: string, das: number) {
   if (cropType === "rice") {
     if (das <= 15) return "establishment";
@@ -21,14 +21,13 @@ function getPhase(cropType: string, das: number) {
 
   return "unknown";
 }
-
 export const computeCropTimeline = async (crop: any) => {
   const today = new Date();
   const sowingDate = new Date(crop.sowing_date);
 
   const totalDays = differenceInDays(today, sowingDate) + 1;
 
-  // WEATHER (ONCE)
+  // WEATHER
   const startDate = sowingDate.toISOString().split("T")[0];
   const endDate = today.toISOString().split("T")[0];
 
@@ -45,7 +44,7 @@ export const computeCropTimeline = async (crop: any) => {
     console.warn("Weather fallback");
   }
 
-  // IRRIGATION HISTORY (ALL DAYS)
+  // IRRIGATION
   const { data: irrigation } = await supabase
     .from("irrigation_actions")
     .select("action_date")
@@ -57,13 +56,10 @@ export const computeCropTimeline = async (crop: any) => {
     )
   );
 
-  // STATE VARIABLES
   let soil_moisture = 50;
-  let health_score = 100;
 
   const timeline = [];
 
-  // 🔥 MAIN LOOP
   for (let i = 0; i < totalDays; i++) {
     const currentDate = addDays(sowingDate, i);
     const dateStr = currentDate.toISOString().split("T")[0];
@@ -77,69 +73,59 @@ export const computeCropTimeline = async (crop: any) => {
     const tempMax = weather?.temp_max || 30;
     const humidity = weather?.humidity || 50;
 
-    let stress_factors: string[] = [];
+    // =========================
+    // 🌧️ WATER MODEL FIRST
+    // =========================
 
-    // =========================
-    // WATER MODEL (IMPORTANT)
-    // =========================
-    soil_moisture += rainfall * 0.5;
+    if (rainfall > 2) {
+      soil_moisture += rainfall * 0.8;
+    }
 
     if (irrigationDates.has(dateStr)) {
-      soil_moisture += 20;
+      soil_moisture += 25;
     }
 
-    soil_moisture -= tempMax * 0.3;
+    let evap = tempMax * 0.2;
 
-    soil_moisture = Math.max(0, Math.min(100, soil_moisture));
-
-    let water_stress = false;
-
-    if (soil_moisture < 30) {
-      water_stress = true;
-      stress_factors.push("low soil moisture");
-      health_score -= 2;
+    if (humidity < 40) {
+      evap *= 1.5;
     }
+
+    soil_moisture -= evap;
+
+    soil_moisture += 1.5;
+
+    soil_moisture = Math.max(10, Math.min(100, soil_moisture));
 
     // =========================
-    // HEAT
+    // 🧠 RULE ENGINE AFTER UPDATE
     // =========================
-    let heat_stress = false;
 
-    if (tempMax > 35) {
-      heat_stress = true;
-      stress_factors.push("heat stress");
-      health_score -= 1.5;
-    }
-
-    // =========================
-    // DISEASE
-    // =========================
-    let disease_risk = 0;
-
-    if (humidity > 80 && tempMax < 35) {
-      disease_risk = 0.7;
-    } else if (humidity > 60) {
-      disease_risk = 0.4;
-    } else {
-      disease_risk = 0.1;
-    }
-
-    if (disease_risk > 0.6) {
-      health_score -= 1;
-    }
-
-    health_score = Math.max(0, Math.min(100, health_score));
+    const result = evaluateAgronomicState({
+      crop: crop.crop_type,
+      phase,
+      soil_moisture,
+      tempMax,
+      humidity,
+      rainfall
+    });
 
     timeline.push({
       date: dateStr,
       day_number: dayNumber,
       phase,
+
       soil_moisture,
-      health_score,
-      water_stress,
-      heat_stress,
-      disease_risk,
-      stress_factors
+
+      health_score: result.health_score,
+      status: result.status,
+
+      water_stress: result.water_stress,
+      heat_stress: result.heat_stress,
+      disease_risk: result.disease_risk,
+
+      stress_factors: result.stress_factors,
+      recommendations: result.recommendations
     });
   }
 

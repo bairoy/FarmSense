@@ -27,3 +27,8 @@ backend/supabase/.cache/
 
 # Misc
 coverage/
+
+venv
+ai/__pycache__
+ai/venv
+rice_model.pth
