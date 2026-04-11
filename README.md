@@ -69,12 +69,17 @@ The platform is built with a **modern full-stack architecture** using TypeScript
 - Track multiple fertilizer types
 - Optimize fertilizer usage for better yields
 
-### 📸 **Crop Health Monitoring** (Foundation for AI Integration)
-
+### 📸 **Crop Health Monitoring (AI)**
 - Upload crop images for analysis
 - AI-powered health status detection
 - Confidence scoring for predictions
 - Track health status history over time
+
+### 🤖 **Conversational AI Farm Assistant**
+- Interactive NLP chat widget integrated into crop details pages
+- Powered by LangChain, LangGraph, and OpenAI GPT-3.5
+- Context-aware discussions combining real-time crop, fertilizer, and irrigation history
+- Tool-based querying connecting directly to the Node.js backend
 
 ### 📊 **Dashboard & Analytics**
 
@@ -145,11 +150,14 @@ FarmSense/
 │   ├── tsconfig.json
 │   └── package.json
 │
-├── ai/                              # AI Service for Disease Detection
+├── ai/                              # AI Service for Disease & NLP Chat
 │   ├── api.py                       # FastAPI application
+│   ├── chat_service.py              # LangGraph Chat Agent
+│   ├── tools.py                     # AI Tools fetching Backend Data
 │   ├── disease_model.py             # PyTorch model integration
 │   ├── rice_model.pth               # Trained PyTorch ResNet18 model
-│   └── requirements.txt             # Python dependencies
+│   ├── requirements.txt             # Python dependencies
+│   └── .env                         # Environment Variables (OpenAI Keys)
 │
 └── README.md
 ```
@@ -172,8 +180,10 @@ FarmSense/
 
 ### **AI Service**
 
-- **Language:** Python 3.10+
+- **Language:** Python 3.12+
 - **Framework:** FastAPI - High-performance API framework
+- **NLP & Agents:** LangChain & LangGraph - Conversational AI flow
+- **LLMs:** OpenAI GPT APIs - Core intelligence engine
 - **Machine Learning:** PyTorch & Torchvision - Deep learning for computer vision
 - **Image Processing:** Pillow (PIL) - Image manipulation
 
@@ -258,7 +268,13 @@ FarmSense/
    pip install -r requirements.txt
    ```
 
-4. **Start the FastAPI server:**
+4. **Create `.env` file with OpenAI credentials:**
+
+   ```env
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+5. **Start the FastAPI server:**
 
    ```bash
    uvicorn api:app --reload --port 8000
@@ -348,10 +364,11 @@ GET    /api/fertilizer/:cropId      - Get fertilizer history
 DELETE /api/fertilizer/:fertilizerId - Remove fertilizer record
 ```
 
-### **AI Crop Analysis (FastAPI)**
+### **AI Analysis & Chat (FastAPI)**
 
 ```
 POST   /detect-disease              - Analyze crop image (Requires form-data with 'file')
+POST   /chat                        - Send NLP chat request to LangGraph Agent
 ```
 
 **Backend endpoints require JWT authentication** via `Authorization: Bearer <token>` header.
