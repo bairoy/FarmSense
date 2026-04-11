@@ -126,6 +126,7 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [diseaseResult, setDiseaseResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const handleLogout = () => {
     console.log("logout clicked");
@@ -225,11 +226,11 @@ export default function Dashboard() {
 
           <div className="p-6">
             <h2 className="text-xl font-semibold text-green-800">
-              Rice & Wheat Disease Detection 🧠
+              Rice & Wheat Disease Detection
             </h2>
 
             <p className="text-sm text-gray-600 mt-1">
-              Identify leaf diseases in paddy and wheat crops using AI-powered analysis.
+              Identify leaf diseases in paddy and wheat crops
             </p>
 
             <button
@@ -244,10 +245,25 @@ export default function Dashboard() {
                 <input
                   type="file"
                   className="w-full text-sm"
-                  onChange={(e) =>
-                    setSelectedFile(e.target.files?.[0] || null)
-                  }
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSelectedFile(file);
+
+                    if (file) {
+                      setPreviewUrl(URL.createObjectURL(file));
+                    }
+                  }}
                 />
+                {previewUrl && (
+                  <div className="mt-3">
+                    <p className="text-sm text-gray-600 mb-1">Preview:</p>
+                    <img
+                      src={previewUrl}
+                      alt="preview"
+                      className="w-full h-40 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
 
                 <button
                   onClick={handleDetectDisease}

@@ -309,6 +309,7 @@ import {
   CartesianGrid,
   ResponsiveContainer
 } from "recharts";
+import CropChatWidget from "../components/CropChatWidget";
 
 export default function CropDetail() {
   const { cropId } = useParams();
@@ -590,6 +591,7 @@ export default function CropDetail() {
 
         <Outlet />
 
+        {cropId && <CropChatWidget cropId={cropId} />}
       </div>
     </div>
   );

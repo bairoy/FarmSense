@@ -1,0 +1,19 @@
+# Environments
+.env
+venv/
+env/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# FastAPI & AI Uploads / Data
+uploads/
+
+# Model Files (optional, uncomment if you don't use Git LFS)
+# *.pth
+# *.h5
+
+# macOS
+.DS_Store
