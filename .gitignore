@@ -32,3 +32,9 @@ venv
 ai/__pycache__
 ai/venv
 rice_model.pth
+# AI service
+ai/data/
+ai/uploads/
+ai/METRICS.md
+ai/eval_results.json
+ai/training_run.json

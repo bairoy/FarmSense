@@ -1,4 +1,4 @@
-import type {Request,Response} from "express";
+import type {Request,Response} from "../../types/http.ts";
 import * as fieldService from "./field.service.ts";
 import {
   createFieldSchema,

@@ -216,7 +216,7 @@ export default function FieldsList() {
                     </td>
 
                     <td className="p-4 text-gray-700">
-                      {field.area} acres
+                      {field.area ? field.area.nepali_label : "not recorded"}
                     </td>
 
                     <td className="p-4 text-center space-x-4">

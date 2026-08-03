@@ -1,76 +1,41 @@
-import type { Request, Response } from "express";
+import type { Request, Response } from "../../types/http.ts";
 import * as cropStateService from "./cropState.service.ts";
 import { createCropStateSchema } from "./cropState.validation.ts";
-import { computeCropTimeline } from "./timeline.engine.ts";
-import { supabase } from "../../config/supabase.ts";
 
-export const createCropStateHandler = async (req: Request, res: Response) => {
+const handle = async (res: Response, work: () => Promise<unknown>, created = false) => {
   try {
-    const body = createCropStateSchema.parse(req.body);
-    const state = await cropStateService.createCropState(req.user!.id, body);
-    res.status(201).json(state);
-  }
-  catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-};
-export const getCropStatesHandler = async (req: Request, res: Response) => {
-  try {
-    const { cropId } = req.params;
-    const states = await cropStateService.getCropStates(
-      req.user!.id,
-      cropId
-    );
-    res.json(states);
-
-  }
-  catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-}
-export const deleteCropStateHandler = async (req: Request, res: Response) => {
-  try {
-    const { stateId } = req.params;
-    await cropStateService.deleteCropState(
-      req.user!.id,
-      stateId
-    );
-    res.json({ success: true });
-  }
-  catch (err: any) {
-    res.status(400).json({ error: err.message });
-  }
-}
-
-export const getCurrentCropStateHandler = async (
-  req: Request,
-  res: Response
-) => {
-  try {
-    const { cropId } = req.params;
-
-    const state = await cropStateService.computeCropState(
-      req.user!.id,
-      cropId
-    );
-
-    res.json(state);
+    const result = await work();
+    res.status(created ? 201 : 200).json(result);
   } catch (err: any) {
-    res.status(400).json({ error: err.message });
+    console.error(err);
+    res.status(err.message?.includes("not found") ? 404 : 400).json({ error: err.message });
   }
 };
-export const getCropTimelineHandler = async (req, res) => {
-  const userId = req.user.id;
-  const cropId = req.params.cropId;
 
-  const { data: crop } = await supabase
-    .from("crop_instances")
-    .select(`id,crop_type,sowing_date,fields!inner(user_id,latitude,longitude)`)
-    .eq("id", cropId)
-    .eq("fields.user_id", userId)
-    .maybeSingle();
+export const createCropStateHandler = (req: Request, res: Response) =>
+  handle(
+    res,
+    async () =>
+      cropStateService.createCropState(req.user!.id, createCropStateSchema.parse(req.body)),
+    true
+  );
 
-  const timeline = await computeCropTimeline(crop);
+export const getCropStatesHandler = (req: Request, res: Response) =>
+  handle(res, () => cropStateService.getCropStates(req.user!.id, req.params.cropId));
 
-  res.json(timeline);
-};
+export const deleteCropStateHandler = (req: Request, res: Response) =>
+  handle(res, () => cropStateService.deleteCropState(req.user!.id, req.params.stateId));
+
+export const getCurrentCropStateHandler = (req: Request, res: Response) =>
+  handle(res, () => cropStateService.computeCropState(req.user!.id, req.params.cropId));
+
+/**
+ * The full simulation.
+ *
+ * The ownership check now lives in the service. Previously this handler
+ * queried the crop itself and passed the result straight into the engine
+ * without checking whether the query returned anything - an unowned crop id
+ * produced `undefined`, which the engine then dereferenced.
+ */
+export const getCropTimelineHandler = (req: Request, res: Response) =>
+  handle(res, () => cropStateService.getTimeline(req.user!.id, req.params.cropId));

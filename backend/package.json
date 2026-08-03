@@ -6,22 +6,32 @@
   "type": "module",
   "scripts": {
     "start": "node src/server.ts",
-    "dev": "nodemon src/server.ts"
+    "dev": "node --watch src/server.ts",
+    "test": "node --test \"src/tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1101.0",
+    "@aws-sdk/s3-request-presigner": "^3.1101.0",
     "@supabase/supabase-js": "^2.94.1",
     "axios": "^1.14.0",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "form-data": "^4.0.6",
     "multer": "^2.1.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "supabase": "^2.76.1"
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.1.2",
+    "supabase": "^2.76.1",
+    "typescript": "^7.0.2"
   }
 }

@@ -1,4 +1,4 @@
-import type {Request,Response} from "express";
+import type {Request,Response} from "../../types/http.ts";
 import * as irrigationService from "./irrigation.service.ts";
 
 import { createIrrigationSchema } from "./irrigation.validation.ts";

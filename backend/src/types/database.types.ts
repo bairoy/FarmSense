@@ -18,25 +18,43 @@ export type Database = {
         Row: {
           confidence: number | null
           crop_instance_id: string | null
+          crop_state_id: string | null
+          disease_class: string | null
           health_status: string | null
           id: string
-          image_url: string
+          image_url: string | null
+          original_bytes: number | null
+          r2_key: string | null
+          stored_bytes: number | null
+          treatment_recommended: string | null
           uploaded_at: string | null
         }
         Insert: {
           confidence?: number | null
           crop_instance_id?: string | null
+          crop_state_id?: string | null
+          disease_class?: string | null
           health_status?: string | null
           id?: string
-          image_url: string
+          image_url?: string | null
+          original_bytes?: number | null
+          r2_key?: string | null
+          stored_bytes?: number | null
+          treatment_recommended?: string | null
           uploaded_at?: string | null
         }
         Update: {
           confidence?: number | null
           crop_instance_id?: string | null
+          crop_state_id?: string | null
+          disease_class?: string | null
           health_status?: string | null
           id?: string
-          image_url?: string
+          image_url?: string | null
+          original_bytes?: number | null
+          r2_key?: string | null
+          stored_bytes?: number | null
+          treatment_recommended?: string | null
           uploaded_at?: string | null
         }
         Relationships: [
@@ -45,6 +63,13 @@ export type Database = {
             columns: ["crop_instance_id"]
             isOneToOne: false
             referencedRelation: "crop_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crop_images_crop_state_id_fkey"
+            columns: ["crop_state_id"]
+            isOneToOne: false
+            referencedRelation: "crop_states"
             referencedColumns: ["id"]
           },
         ]
@@ -89,32 +114,109 @@ export type Database = {
       }
       crop_states: {
         Row: {
+          confidence: number | null
+          confidence_score: number | null
+          created_at: string | null
           crop_instance_id: string | null
-          current_phase: string
           day_number: number
+          disease_risk: number | null
+          health_score: number | null
           id: string
+          notes: string | null
+          nutrient_stress: boolean | null
+          phase: string
           recorded_date: string | null
-          stress_score: number | null
+          source: string | null
+          stale_days: number | null
+          status: string | null
+          stress_factors: Json | null
+          water_stress: boolean | null
         }
         Insert: {
+          confidence?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
           crop_instance_id?: string | null
-          current_phase: string
           day_number: number
+          disease_risk?: number | null
+          health_score?: number | null
           id?: string
+          notes?: string | null
+          nutrient_stress?: boolean | null
+          phase: string
           recorded_date?: string | null
-          stress_score?: number | null
+          source?: string | null
+          stale_days?: number | null
+          status?: string | null
+          stress_factors?: Json | null
+          water_stress?: boolean | null
         }
         Update: {
+          confidence?: number | null
+          confidence_score?: number | null
+          created_at?: string | null
           crop_instance_id?: string | null
-          current_phase?: string
           day_number?: number
+          disease_risk?: number | null
+          health_score?: number | null
           id?: string
+          notes?: string | null
+          nutrient_stress?: boolean | null
+          phase?: string
           recorded_date?: string | null
-          stress_score?: number | null
+          source?: string | null
+          stale_days?: number | null
+          status?: string | null
+          stress_factors?: Json | null
+          water_stress?: boolean | null
         }
         Relationships: [
           {
             foreignKeyName: "crop_states_crop_instance_id_fkey"
+            columns: ["crop_instance_id"]
+            isOneToOne: false
+            referencedRelation: "crop_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      farmer_checkins: {
+        Row: {
+          answer: string | null
+          asked_at: string
+          created_at: string | null
+          crop_instance_id: string
+          id: string
+          model_correction: Json | null
+          question_key: string
+          question_text: string
+          responded_at: string | null
+        }
+        Insert: {
+          answer?: string | null
+          asked_at?: string
+          created_at?: string | null
+          crop_instance_id: string
+          id?: string
+          model_correction?: Json | null
+          question_key: string
+          question_text: string
+          responded_at?: string | null
+        }
+        Update: {
+          answer?: string | null
+          asked_at?: string
+          created_at?: string | null
+          crop_instance_id?: string
+          id?: string
+          model_correction?: Json | null
+          question_key?: string
+          question_text?: string
+          responded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_checkins_crop_instance_id_fkey"
             columns: ["crop_instance_id"]
             isOneToOne: false
             referencedRelation: "crop_instances"
@@ -129,7 +231,7 @@ export type Database = {
           crop_instance_id: string | null
           fertilizer_type: string
           id: string
-          quantity: number | null
+          quantity: number
         }
         Insert: {
           action_date: string
@@ -137,7 +239,7 @@ export type Database = {
           crop_instance_id?: string | null
           fertilizer_type: string
           id?: string
-          quantity?: number | null
+          quantity: number
         }
         Update: {
           action_date?: string
@@ -145,7 +247,7 @@ export type Database = {
           crop_instance_id?: string | null
           fertilizer_type?: string
           id?: string
-          quantity?: number | null
+          quantity?: number
         }
         Relationships: [
           {
@@ -160,6 +262,9 @@ export type Database = {
       fields: {
         Row: {
           area: number | null
+          area_source: string | null
+          area_sqm: number | null
+          boundary: Json | null
           created_at: string | null
           id: string
           latitude: number
@@ -170,6 +275,9 @@ export type Database = {
         }
         Insert: {
           area?: number | null
+          area_source?: string | null
+          area_sqm?: number | null
+          boundary?: Json | null
           created_at?: string | null
           id?: string
           latitude: number
@@ -180,6 +288,9 @@ export type Database = {
         }
         Update: {
           area?: number | null
+          area_source?: string | null
+          area_sqm?: number | null
+          boundary?: Json | null
           created_at?: string | null
           id?: string
           latitude?: number
@@ -193,21 +304,21 @@ export type Database = {
       irrigation_actions: {
         Row: {
           action_date: string
-          amount: number | null
+          amount: number
           created_at: string | null
           crop_instance_id: string | null
           id: string
         }
         Insert: {
           action_date: string
-          amount?: number | null
+          amount: number
           created_at?: string | null
           crop_instance_id?: string | null
           id?: string
         }
         Update: {
           action_date?: string
-          amount?: number | null
+          amount?: number
           created_at?: string | null
           crop_instance_id?: string | null
           id?: string
@@ -218,6 +329,59 @@ export type Database = {
             columns: ["crop_instance_id"]
             isOneToOne: false
             referencedRelation: "crop_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      satellite_observations: {
+        Row: {
+          backscatter_vh_db: number | null
+          backscatter_vv_db: number | null
+          cloud_cover_pct: number | null
+          created_at: string | null
+          field_id: string
+          id: string
+          likely_flooded: boolean | null
+          ndvi: number | null
+          ndwi: number | null
+          observed_date: string
+          source: string
+          usable: boolean
+        }
+        Insert: {
+          backscatter_vh_db?: number | null
+          backscatter_vv_db?: number | null
+          cloud_cover_pct?: number | null
+          created_at?: string | null
+          field_id: string
+          id?: string
+          likely_flooded?: boolean | null
+          ndvi?: number | null
+          ndwi?: number | null
+          observed_date: string
+          source: string
+          usable?: boolean
+        }
+        Update: {
+          backscatter_vh_db?: number | null
+          backscatter_vv_db?: number | null
+          cloud_cover_pct?: number | null
+          created_at?: string | null
+          field_id?: string
+          id?: string
+          likely_flooded?: boolean | null
+          ndvi?: number | null
+          ndwi?: number | null
+          observed_date?: string
+          source?: string
+          usable?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satellite_observations_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "fields"
             referencedColumns: ["id"]
           },
         ]

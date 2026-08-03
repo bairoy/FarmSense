@@ -18,11 +18,12 @@ export const createIrrigation = async(
   if(cropError || !crop){
     throw new Error("crop not found or unauthorized");
   }
-  const action_date = payload.action_date
-  ? new Date(payload.action_date)
-  : new Date()
+  // Stored as an ISO date string; passing a Date object relies on incidental
+  // JSON serialisation and does not match the column type.
+  const action_date = (
+    payload.action_date ? new Date(payload.action_date) : new Date()
+  ).toISOString();
 
-   
   const {data,error} = await supabase
   .from("irrigation_actions")
   .insert({

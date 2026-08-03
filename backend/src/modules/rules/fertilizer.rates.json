@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "description": "Recommended nutrient doses for rice and wheat in the Nepal Terai, as structured reference data. An LLM must NEVER generate these numbers - a wrong quantity here is wasted money and a damaged crop, not a cosmetic bug.",
+    "sources": [
+      "Nepal Department of Agriculture / NARC - recommended fertilizer doses for cereal crops in the Terai",
+      "Soil Science Division, NARC Khumaltar - nutrient management guidelines"
+    ],
+    "review_note": "Doses are district-level defaults. A soil test overrides them - if the farmer has one, use their measured values instead of this table.",
+    "units": "kg of NUTRIENT per hectare (N, P2O5, K2O). Product quantities are derived from the nutrient_content table below.",
+    "caveat": "These assume irrigated conditions with adequate water. Under rainfed or water-stressed conditions, reduce nitrogen - unused N is money lost and increases lodging and disease risk."
+  },
+  "nutrient_content": {
+    "urea": { "N": 0.46, "P2O5": 0, "K2O": 0, "label": "Urea (46-0-0)" },
+    "dap": { "N": 0.18, "P2O5": 0.46, "K2O": 0, "label": "DAP (18-46-0)" },
+    "mop": { "N": 0, "P2O5": 0, "K2O": 0.6, "label": "Muriate of Potash (0-0-60)" }
+  },
+  "crops": {
+    "rice": {
+      "total_per_hectare": { "N": 100, "P2O5": 30, "K2O": 30 },
+      "organic_recommendation": "4-6 tonnes/ha of well-decomposed farmyard manure, incorporated during land preparation.",
+      "splits": [
+        {
+          "name": "basal",
+          "timing": "At final land preparation, before transplanting",
+          "phase": "seedling",
+          "gdd_start": 0,
+          "gdd_end": 350,
+          "fraction": { "N": 0.5, "P2O5": 1.0, "K2O": 1.0 },
+          "note": "All phosphorus and potassium go in at basal. Phosphorus is immobile in soil and must be placed in the root zone before the crop needs it."
+        },
+        {
+          "name": "tillering_topdress",
+          "timing": "20-25 days after transplanting, at active tillering",
+          "phase": "tillering",
+          "gdd_start": 350,
+          "gdd_end": 900,
+          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "note": "Drain the field to a shallow layer before applying urea, then re-flood. Broadcasting urea into deep standing water loses much of it to volatilisation and runoff."
+        },
+        {
+          "name": "panicle_initiation_topdress",
+          "timing": "At panicle initiation, roughly 40-45 days after transplanting",
+          "phase": "flowering",
+          "gdd_start": 900,
+          "gdd_end": 1400,
+          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "note": "This split drives grain number. Skipping it costs yield even if the earlier doses were correct."
+        }
+      ],
+      "stress_adjustments": {
+        "water_stress": {
+          "N_multiplier": 0.7,
+          "reason": "A water-stressed crop cannot take up nitrogen. Applying the full dose wastes fertilizer and can scorch the crop."
+        },
+        "disease_detected": {
+          "N_multiplier": 0.7,
+          "reason": "Excess nitrogen makes blast and brown spot substantially worse. Hold back nitrogen until the disease is controlled."
+        }
+      }
+    },
+    "wheat": {
+      "total_per_hectare": { "N": 100, "P2O5": 50, "K2O": 25 },
+      "organic_recommendation": "4-6 tonnes/ha of well-decomposed farmyard manure, incorporated before sowing.",
+      "splits": [
+        {
+          "name": "basal",
+          "timing": "At sowing",
+          "phase": "establishment",
+          "gdd_start": 0,
+          "gdd_end": 250,
+          "fraction": { "N": 0.5, "P2O5": 1.0, "K2O": 1.0 },
+          "note": "Place fertilizer with the seed drill where possible; broadcasting phosphorus on the surface leaves most of it out of reach of the roots."
+        },
+        {
+          "name": "crown_root_topdress",
+          "timing": "At the first irrigation, 21-25 days after sowing (crown root initiation)",
+          "phase": "tillering",
+          "gdd_start": 250,
+          "gdd_end": 700,
+          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "note": "Crown root initiation is the single most responsive stage for wheat nitrogen. Apply just before or with irrigation so the nitrogen moves into the root zone."
+        },
+        {
+          "name": "jointing_topdress",
+          "timing": "At the second irrigation, roughly 40-45 days after sowing",
+          "phase": "stem_elongation",
+          "gdd_start": 700,
+          "gdd_end": 1100,
+          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "note": "Final nitrogen split. Applying nitrogen after flowering does not increase yield and delays maturity into the pre-monsoon heat."
+        }
+      ],
+      "stress_adjustments": {
+        "water_stress": {
+          "N_multiplier": 0.7,
+          "reason": "Wheat nitrogen must go on with irrigation. Top-dressing a dry field leaves the urea on the surface where it volatilises."
+        },
+        "disease_detected": {
+          "N_multiplier": 0.8,
+          "reason": "High nitrogen increases rust susceptibility and lodging risk."
+        }
+      }
+    }
+  }
+}

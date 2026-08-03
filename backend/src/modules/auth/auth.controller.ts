@@ -1,4 +1,4 @@
-import type { Request,Response } from "express";
+import type { Request,Response } from "../../types/http.ts";
 import * as authService from "./auth.service.ts";
 import { signupSchema,loginSchema } from "./auth.validation.ts";
 

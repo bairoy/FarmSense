@@ -1,314 +1,26 @@
-// import { useEffect, useState } from "react";
-// import { useParams, useSearchParams } from "react-router-dom";
-// import { getCropById, updateCrop, getCurrentCropState, getCropTimeline } from "../crop.service";
-// import type { Crop } from "../crop.types";
-// import { Outlet } from "react-router-dom";
-// import { Link } from "react-router-dom";
-// import {
-//   LineChart,
-//   Line,
-//   XAxis,
-//   YAxis,
-//   Tooltip,
-//   CartesianGrid,
-//   ResponsiveContainer
-// } from "recharts";
-// export default function CropDetail() {
-//   const { cropId } = useParams();
-//   const [searchParams] = useSearchParams();
-//   const editMode = searchParams.get("edit") === "true";
-
-//   const [crop, setCrop] = useState<Crop | null>(null);
-//   const [date, setDate] = useState("");
-//   const [loading, setLoading] = useState(true);
-//   const [cropState, setCropState] = useState<any>(null);
-//   const [stateLoading, setStateLoading] = useState(false);
-//   const [timeline, setTimeline] = useState<any[]>([]);
-//   const [timelineLoading, setTimelineLoading] = useState(false);
-
-//   /* ================= FETCH ================= */
-//   useEffect(() => {
-//     let mounted = true;
-
-//     const fetchCrop = async () => {
-//       if (!cropId) return;
-
-//       try {
-//         setLoading(true);
-//         const data = await getCropById(cropId);
-//         if (mounted) {
-//           setCrop(data);
-//           setDate(data?.sowing_date || "");
-//         }
-//       } catch (err) {
-//         console.error(err);
-//       } finally {
-//         if (mounted) setLoading(false);
-//       }
-//     };
-
-//     fetchCrop();
-
-//     return () => {
-//       mounted = false;
-//     };
-//   }, [cropId]);
-
-//   /* ================= UPDATE ================= */
-//   const handleUpdate = async () => {
-//     if (!cropId) return;
-
-//     try {
-//       await updateCrop(cropId, { sowing_date: date });
-
-//       const updated = await getCropById(cropId);
-//       setCrop(updated);
-//     } catch (err) {
-//       console.error(err);
-//     }
-//   };
-
-//   const handleAnalyzeCrop = async () => {
-//     if (!cropId) return;
-
-//     try {
-//       setStateLoading(true);
-//       const state = await getCurrentCropState(cropId);
-//       setCropState(state);
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setStateLoading(false);
-//     }
-//   };
-//   const handleTimeline = async () => {
-//     if (!cropId) return;
-
-//     try {
-//       setTimelineLoading(true);
-//       const data = await getCropTimeline(cropId);
-//       setTimeline(data);
-//     } catch (err) {
-//       console.error(err);
-//     } finally {
-//       setTimelineLoading(false);
-//     }
-//   };
-
-//   /* ================= UI ================= */
-//   if (loading) return <div>Loading...</div>;
-//   if (!crop) return <div>No crop found</div>;
-
-//   return (
-//     <div className="bg-white p-6 rounded shadow">
-//       <h2 className="text-xl font-bold">{crop.crop_type}</h2>
-//       <p>Status: {crop.status}</p>
-//       <p>Sowing date: {crop.sowing_date}</p>
-
-//       {editMode && (
-//         <>
-//           <input
-//             type="date"
-//             className="border p-2 mt-3"
-//             value={date}
-//             onChange={(e) => setDate(e.target.value)}
-//           />
-
-//           <button
-//             onClick={handleUpdate}
-//             className="bg-green-600 text-white px-4 py-2 ml-2 rounded"
-//           >
-//             Update
-//           </button>
-//         </>
-//       )}
-
-//       <div className="mt-4 flex gap-3">
-//         <Link
-//           to="fertilizer"
-//           className="bg-blue-600 text-white px-4 py-2 rounded"
-//         >
-//           Fertilizer History
-//         </Link>
-
-//         <Link
-//           to="fertilizer/new"
-//           className="bg-green-600 text-white px-4 py-2 rounded"
-//         >
-//           Add Fertilizer
-//         </Link>
-//       </div>
-//       <div className="mt-4 flex gap-3">
-//         <Link
-//           to="irrigation"
-//           className="bg-blue-600 text-white px-4 py-2 rounded"
-//         >
-//           Irrigation History
-//         </Link>
-
-//         <Link
-//           to="irrigation/new"
-//           className="bg-purple-600 text-white px-4 py-2 rounded"
-//         >
-//           Add Irrigation
-//         </Link>
-//       </div>
-
-//       <button
-//         onClick={handleAnalyzeCrop}
-//         className="bg-yellow-500 text-white px-4 py-2 mt-4 rounded"
-//       >
-//         Analyze Crop
-//       </button>
-//       {stateLoading && <p className="mt-3">Analyzing crop...</p>}
-
-//       {cropState && (
-//         <div className="mt-6 p-5 border rounded-lg bg-gray-50 shadow-sm">
-//           <h3 className="text-xl font-semibold mb-3">Crop Intelligence Report</h3>
-
-//           {/* BASIC INFO */}
-//           <p><strong>Phase:</strong> {cropState.phase}</p>
-//           <p><strong>Day:</strong> {cropState.day_number}</p>
-
-//           {/* HEALTH */}
-//           <div className="mt-3">
-//             <p><strong>Health Score:</strong> {cropState.health_score}</p>
-
-//             <div className="w-full bg-gray-200 rounded h-3 mt-1">
-//               <div
-//                 className={`h-3 rounded ${cropState.health_score > 80
-//                   ? "bg-green-500"
-//                   : cropState.health_score > 60
-//                     ? "bg-yellow-400"
-//                     : cropState.health_score > 40
-//                       ? "bg-orange-500"
-//                       : "bg-red-600"
-//                   }`}
-//                 style={{ width: `${cropState.health_score}%` }}
-//               />
-//             </div>
-
-//             <p className="mt-1"><strong>Status:</strong> {cropState.status}</p>
-//           </div>
-
-//           {/* STRESS */}
-//           <div className="mt-4">
-//             <h4 className="font-semibold">Stress Analysis</h4>
-
-//             <p>
-//               <strong>Water Stress:</strong>{" "}
-//               {cropState.water_stress ? "Yes" : "No"}
-//             </p>
-
-//             <p>
-//               <strong>Heat Stress:</strong>{" "}
-//               {cropState.heat_stress ? "Yes" : "No"}
-//             </p>
-
-//             <p>
-//               <strong>Disease Risk:</strong>{" "}
-//               {(cropState.disease_risk * 100).toFixed(0)}%
-//             </p>
-//           </div>
-
-//           {/* WEATHER */}
-//           {cropState.weather && (
-//             <div className="mt-4">
-//               <h4 className="font-semibold">Weather Conditions (Today)</h4>
-
-//               <p><strong>Rainfall:</strong> {cropState.weather.rainfall} mm</p>
-//               <p><strong>Max Temp:</strong> {cropState.weather.tempMax} °C</p>
-//               <p><strong>Humidity:</strong> {cropState.weather.humidity}%</p>
-//             </div>
-//           )}
-
-//           {/* STRESS FACTORS */}
-//           {cropState.stress_factors?.length > 0 && (
-//             <div className="mt-4">
-//               <strong>Stress Factors:</strong>
-//               <ul className="list-disc ml-5">
-//                 {cropState.stress_factors.map((f: string, i: number) => (
-//                   <li key={i}>{f}</li>
-//                 ))}
-//               </ul>
-//             </div>
-//           )}
-
-//           {/* CONFIDENCE
-//           <div className="mt-4 text-sm text-gray-600">
-//             <strong>AI Confidence:</strong>{" "}
-//             {(cropState.confidence_score * 100).toFixed(0)}%
-//           </div> */}
-//           {/* ✅ MOVE RECOMMENDATIONS HERE */}
-//           {cropState.recommendations?.length > 0 && (
-//             <div className="mt-4">
-//               <strong>Recommendations:</strong>
-//               <ul className="list-disc ml-5">
-//                 {cropState.recommendations.map((r: string, i: number) => (
-//                   <li key={i}>{r}</li>
-//                 ))}
-//               </ul>
-//             </div>
-//           )}
-//         </div>
-//       )}
-//       <button
-//         onClick={handleTimeline}
-//         className="bg-indigo-600 text-white px-4 py-2 mt-2 rounded"
-//       >
-//         Show Timeline
-//       </button>
-
-//       {timelineLoading && <p className="mt-2">Loading timeline...</p>}
-//       {timeline.length > 0 && (
-//         <div className="mt-6 p-5 border rounded-lg bg-white shadow">
-//           <h3 className="text-xl font-semibold mb-4">Crop Timeline</h3>
-
-//           <ResponsiveContainer width="100%" height={300}>
-//             <LineChart data={timeline}>
-//               <CartesianGrid strokeDasharray="3 3" />
-//               <XAxis dataKey="day_number" />
-//               <YAxis />
-//               <Tooltip />
-
-//               <Line
-//                 type="monotone"
-//                 dataKey="health_score"
-//                 stroke="#16a34a"
-//                 name="Health"
-//               />
-
-//               <Line
-//                 type="monotone"
-//                 dataKey="soil_moisture"
-//                 stroke="#2563eb"
-//                 name="Soil Moisture"
-//               />
-//             </LineChart>
-//           </ResponsiveContainer>
-//         </div>
-//       )}
-
-//       <Outlet />
-//     </div>
-//   );
-// }
-
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
-import { getCropById, updateCrop, getCurrentCropState, getCropTimeline } from "../crop.service";
-import type { Crop } from "../crop.types";
-import { Outlet } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useParams, useSearchParams, Outlet, Link } from "react-router-dom";
 import {
   LineChart,
   Line,
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
   CartesianGrid,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from "recharts";
+
+import { getCropById, updateCrop, getCropTimeline } from "../crop.service";
+import type { Crop } from "../crop.types";
+import {
+  getRecommendations,
+  type RecommendationBundle,
+} from "../../recommendations/recommendations.service";
+import { RecommendationPanel } from "../../recommendations/RecommendationPanel";
+import { CheckinPrompt } from "../../recommendations/CheckinPrompt";
+import { ConfidenceBadge } from "../../../components/ConfidenceBadge";
+import { ChatPanel } from "../../chat";
 
 export default function CropDetail() {
   const { cropId } = useParams();
@@ -318,71 +30,66 @@ export default function CropDetail() {
   const [crop, setCrop] = useState<Crop | null>(null);
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(true);
-  const [cropState, setCropState] = useState<any>(null);
-  const [stateLoading, setStateLoading] = useState(false);
+
+  const [bundle, setBundle] = useState<RecommendationBundle | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+
   const [timeline, setTimeline] = useState<any[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
+  const [waterModel, setWaterModel] = useState<"depletion" | "paddy">("depletion");
+
+  const [chatOpen, setChatOpen] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
+    if (!cropId) return;
+    let active = true;
 
-    const fetchCrop = async () => {
-      if (!cropId) return;
-
-      try {
-        setLoading(true);
-        const data = await getCropById(cropId);
-        if (mounted) {
-          setCrop(data);
-          setDate(data?.sowing_date || "");
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    fetchCrop();
+    setLoading(true);
+    getCropById(cropId)
+      .then((data) => {
+        if (!active) return;
+        setCrop(data);
+        setDate(data?.sowing_date ?? "");
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (active) setLoading(false);
+      });
 
     return () => {
-      mounted = false;
+      active = false;
     };
   }, [cropId]);
 
   const handleUpdate = async () => {
     if (!cropId) return;
-
-    try {
-      await updateCrop(cropId, { sowing_date: date });
-      const updated = await getCropById(cropId);
-      setCrop(updated);
-    } catch (err) {
-      console.error(err);
-    }
+    await updateCrop(cropId, { sowing_date: date });
+    setCrop(await getCropById(cropId));
+    // Sowing date anchors the entire GDD model, so anything already computed
+    // from the old date is now stale.
+    setBundle(null);
+    setTimeline([]);
   };
 
-  const handleAnalyzeCrop = async () => {
+  const handleAnalyse = async () => {
     if (!cropId) return;
-
+    setAnalysing(true);
     try {
-      setStateLoading(true);
-      const state = await getCurrentCropState(cropId);
-      setCropState(state);
+      setBundle(await getRecommendations(cropId));
     } catch (err) {
       console.error(err);
     } finally {
-      setStateLoading(false);
+      setAnalysing(false);
     }
   };
 
   const handleTimeline = async () => {
     if (!cropId) return;
-
+    setTimelineLoading(true);
     try {
-      setTimelineLoading(true);
-      const data = await getCropTimeline(cropId);
-      setTimeline(data);
+      const result = await getCropTimeline(cropId);
+      setTimeline(result.timeline ?? []);
+      setWaterModel(result.water_model ?? "depletion");
     } catch (err) {
       console.error(err);
     } finally {
@@ -390,50 +97,82 @@ export default function CropDetail() {
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-green-700 text-lg">
+      <div className="min-h-screen flex items-center justify-center text-green-700">
         Loading crop data...
       </div>
     );
+  }
 
-  if (!crop) return <div>No crop found</div>;
+  if (!crop) return <div className="p-8">No crop found</div>;
+
+  const state = bundle?.state;
 
   return (
-    <div className="min-h-screen bg-green-50 px-6 pt-24 pb-10">
-
+    <div className="min-h-screen bg-green-50 px-4 sm:px-6 pt-24 pb-10">
       <div className="max-w-6xl mx-auto space-y-6">
-
         {/* HEADER */}
         <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <h2 className="text-3xl font-bold text-green-800">
-            {crop.crop_type} 🌾
-          </h2>
-          <p className="text-green-700 mt-1">
-            Monitor crop growth, health, and performance
-          </p>
-
-          <div className="mt-3 text-sm text-gray-700">
-            <p><strong>Status:</strong> {crop.status}</p>
-            <p><strong>Sowing Date:</strong> {crop.sowing_date}</p>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-3xl font-bold text-green-800 capitalize">
+                {crop.crop_type} 🌾
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Sown {crop.sowing_date} · status {crop.status}
+              </p>
+            </div>
+            {state && <ConfidenceBadge confidence={state.confidence} />}
           </div>
+
+          {state && (
+            <div className="mt-5 grid sm:grid-cols-3 gap-4">
+              <Stat
+                label="Growth stage"
+                value={state.phase.replace(/_/g, " ")}
+                sub={`day ${state.day_number} · ${state.progress_pct}% of season`}
+              />
+              <Stat
+                label="Health"
+                value={`${state.health_score}/100`}
+                sub={state.status.replace("_", " ")}
+              />
+              <Stat
+                label="Water"
+                value={
+                  state.water.model === "paddy"
+                    ? `${state.water.ponded_depth_mm?.toFixed(0) ?? 0} mm standing`
+                    : `${state.water.depletion_mm?.toFixed(0) ?? 0} mm depleted`
+                }
+                sub={
+                  state.water.model === "paddy"
+                    ? state.water.flooded
+                      ? "flooded"
+                      : `dry ${state.water.dry_days ?? 0} day(s)`
+                    : `stress from ${state.water.RAW_mm?.toFixed(0) ?? "?"} mm`
+                }
+              />
+            </div>
+          )}
         </div>
 
-        {/* EDIT MODE */}
+        {cropId && <CheckinPrompt cropId={cropId} />}
+
+        {/* EDIT */}
         {editMode && (
           <div className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm">
-            <h3 className="font-semibold text-green-800 mb-2">
-              Update Sowing Date
-            </h3>
-
-            <div className="flex gap-3 items-center">
+            <h3 className="font-semibold text-green-800 mb-2">Update Sowing Date</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Every growth stage and fertilizer timing is anchored to this date.
+            </p>
+            <div className="flex gap-3 items-center flex-wrap">
               <input
                 type="date"
                 className="border p-2 rounded-md"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
-
               <button
                 onClick={handleUpdate}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
@@ -446,110 +185,62 @@ export default function CropDetail() {
 
         {/* ACTIONS */}
         <div className="flex flex-wrap gap-3">
-          <Link
-            to="fertilizer"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
+          <NavButton to="diagnose" className="bg-emerald-600 hover:bg-emerald-700">
+            📷 Diagnose from photo
+          </NavButton>
+          <NavButton to="fertilizer" className="bg-blue-600 hover:bg-blue-700">
             Fertilizer History
-          </Link>
-
-          <Link
-            to="fertilizer/new"
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-          >
-            Add Fertilizer
-          </Link>
-
-          <Link
-            to="irrigation"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-          >
+          </NavButton>
+          <NavButton to="fertilizer/new" className="bg-green-600 hover:bg-green-700">
+            Log Fertilizer
+          </NavButton>
+          <NavButton to="irrigation" className="bg-blue-600 hover:bg-blue-700">
             Irrigation History
-          </Link>
-
-          <Link
-            to="irrigation/new"
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition"
-          >
-            Add Irrigation
-          </Link>
+          </NavButton>
+          <NavButton to="irrigation/new" className="bg-purple-600 hover:bg-purple-700">
+            Log Irrigation
+          </NavButton>
         </div>
 
-        {/* AI ANALYSIS */}
+        {/* RECOMMENDATIONS */}
         <div className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm">
           <button
-            onClick={handleAnalyzeCrop}
-            className="bg-yellow-500 text-white px-5 py-2 rounded-lg hover:bg-yellow-600 transition"
+            onClick={handleAnalyse}
+            disabled={analysing}
+            className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white px-5 py-2 rounded-lg transition"
           >
-            Analyze Crop
+            {analysing ? "Analysing..." : "Analyse crop & get recommendations"}
           </button>
 
-          {stateLoading && (
-            <p className="mt-3 text-gray-600">Analyzing crop...</p>
-          )}
-
-          {cropState && (
-            <div className="mt-6 space-y-4">
-
-              <h3 className="text-xl font-semibold text-green-800">
-                Crop Intelligence Report 🧠
-              </h3>
-
-              {/* HEALTH */}
-              <div>
-                <p><strong>Health Score:</strong> {cropState.health_score}</p>
-
-                <div className="w-full bg-gray-200 rounded h-3 mt-2">
-                  <div
-                    className={`h-3 rounded ${cropState.health_score > 80
-                      ? "bg-green-500"
-                      : cropState.health_score > 60
-                        ? "bg-yellow-400"
-                        : cropState.health_score > 40
-                          ? "bg-orange-500"
-                          : "bg-red-600"
-                      }`}
-                    style={{ width: `${cropState.health_score}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* INFO GRID */}
-              <div className="grid md:grid-cols-2 gap-4 text-sm">
-
-                <div className="bg-green-50 p-4 rounded-xl">
-                  <p><strong>Phase:</strong> {cropState.phase}</p>
-                  <p><strong>Day:</strong> {cropState.day_number}</p>
-                  <p><strong>Status:</strong> {cropState.status}</p>
-                </div>
-
-                <div className="bg-green-50 p-4 rounded-xl">
-                  <p><strong>Water Stress:</strong> {cropState.water_stress ? "Yes" : "No"}</p>
-                  <p><strong>Heat Stress:</strong> {cropState.heat_stress ? "Yes" : "No"}</p>
-                  <p><strong>Disease Risk:</strong> {(cropState.disease_risk * 100).toFixed(0)}%</p>
-                </div>
-
-              </div>
-
-              {/* WEATHER */}
-              {cropState.weather && (
-                <div className="bg-blue-50 p-4 rounded-xl text-sm">
-                  <p><strong>Rainfall:</strong> {cropState.weather.rainfall} mm</p>
-                  <p><strong>Max Temp:</strong> {cropState.weather.tempMax} °C</p>
-                  <p><strong>Humidity:</strong> {cropState.weather.humidity}%</p>
-                </div>
-              )}
-
-              {/* RECOMMENDATIONS */}
-              {cropState.recommendations?.length > 0 && (
-                <div className="bg-yellow-50 p-4 rounded-xl text-sm">
-                  <strong>Recommendations:</strong>
-                  <ul className="list-disc ml-5 mt-2">
-                    {cropState.recommendations.map((r: string, i: number) => (
-                      <li key={i}>{r}</li>
+          {bundle && (
+            <div className="mt-6 space-y-5">
+              {state && state.stress_factors.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-sm">
+                  <p className="font-medium text-orange-900">Current stresses</p>
+                  <ul className="mt-2 list-disc ml-5 space-y-1 text-orange-900">
+                    {state.stress_factors.map((factor, i) => (
+                      <li key={i}>{factor}</li>
                     ))}
                   </ul>
                 </div>
+              )}
+
+              {state?.correction.note && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-900">
+                  <p className="font-medium">Satellite check</p>
+                  <p className="mt-1">{state.correction.note}</p>
+                </div>
+              )}
+
+              <RecommendationPanel bundle={bundle} />
+
+              {state && (
+                <p className="text-xs text-gray-500">
+                  Soil data:{" "}
+                  {state.soil.source === "soilgrids"
+                    ? `ISRIC SoilGrids (${state.soil.textureClass ?? "measured"}, ${state.soil.tawMmPerM.toFixed(0)} mm/m available water)`
+                    : "district default — no per-field soil measurement available"}
+                </p>
               )}
             </div>
           )}
@@ -559,29 +250,75 @@ export default function CropDetail() {
         <div className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm">
           <button
             onClick={handleTimeline}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+            disabled={timelineLoading}
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition"
           >
-            Show Timeline
+            {timelineLoading ? "Loading..." : "Show season timeline"}
           </button>
-
-          {timelineLoading && (
-            <p className="mt-3 text-gray-600">Loading timeline...</p>
-          )}
 
           {timeline.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-xl font-semibold mb-4 text-green-800">
-                Crop Timeline 📈
+              <h3 className="text-xl font-semibold mb-1 text-green-800">
+                Season timeline 📈
               </h3>
+              <p className="text-xs text-gray-500 mb-4">
+                {waterModel === "paddy"
+                  ? "Rice: standing water depth in mm. A paddy is modelled by ponded depth, not soil moisture."
+                  : "Wheat: root-zone depletion in mm. Stress begins where depletion crosses RAW."}
+              </p>
 
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={320}>
                 <LineChart data={timeline}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day_number" />
-                  <YAxis />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
                   <Tooltip />
-                  <Line type="monotone" dataKey="health_score" stroke="#16a34a" />
-                  <Line type="monotone" dataKey="soil_moisture" stroke="#2563eb" />
+                  <Legend />
+
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="health_score"
+                    name="Health"
+                    stroke="#16a34a"
+                    dot={false}
+                  />
+
+                  {/* The chart previously plotted `soil_moisture`, a field the
+                      engine no longer emits - it silently rendered an empty
+                      line. Each water model now plots its own real state
+                      variable. */}
+                  {waterModel === "paddy" ? (
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="ponded_depth_mm"
+                      name="Standing water (mm)"
+                      stroke="#2563eb"
+                      dot={false}
+                    />
+                  ) : (
+                    <>
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="soil_depletion"
+                        name="Depletion (mm)"
+                        stroke="#2563eb"
+                        dot={false}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="RAW"
+                        name="Stress threshold (mm)"
+                        stroke="#dc2626"
+                        strokeDasharray="4 4"
+                        dot={false}
+                      />
+                    </>
+                  )}
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -589,8 +326,80 @@ export default function CropDetail() {
         </div>
 
         <Outlet />
-
       </div>
+
+      {/* Chat button and panel */}
+      {cropId && (
+        <>
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            className="fixed bottom-4 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition flex items-center justify-center z-40"
+            aria-label={chatOpen ? "Close chat" : "Open chat"}
+          >
+            {chatOpen ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.848 2.771A49.144 49.144 0 0 1 12 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 0 1-3.476.383.39.39 0 0 0-.297.17l-2.755 4.133a.75.75 0 0 1-1.248 0l-2.755-4.133a.39.39 0 0 0-.297-.17 48.9 48.9 0 0 1-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97Z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+          </button>
+          <ChatPanel
+            cropId={cropId}
+            isOpen={chatOpen}
+            onClose={() => setChatOpen(false)}
+          />
+        </>
+      )}
     </div>
+  );
+}
+
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="bg-green-50 rounded-xl p-4">
+      <p className="text-xs text-gray-600 uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-semibold text-green-900 capitalize mt-0.5">{value}</p>
+      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function NavButton({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      className={`${className} text-white px-4 py-2 rounded-lg transition text-sm`}
+    >
+      {children}
+    </Link>
   );
 }

@@ -17,6 +17,7 @@ import FertilizerHistory from "../features/fertilizer/pages/FertilizerHistory";
 import AddFertilizer from "../features/fertilizer/pages/AddFertilizer";
 import IrrigationHistory from "../features/irrigation/pages/IrrigationHistory";
 import AddIrrigation from "../features/irrigation/pages/AddIrrigation";
+import CropDiagnosis from "../features/disease/pages/CropDiagnosis";
 
 export default function App() {
   return (
@@ -37,11 +38,12 @@ export default function App() {
             <Route path="crops" element={<CropsByField />} />
             <Route path="crops/new" element={<CreateCrop />} />
           </Route>
-          <Route path="/crop/:cropId" element={<CropDetail />} >
-          <Route path="fertilizer" element={<FertilizerHistory />} />
-          <Route path="fertilizer/new" element={<AddFertilizer />} />
-          <Route path="irrigation" element={<IrrigationHistory/>}/>
-          <Route path="irrigation/new" element={<AddIrrigation/>}/>
+          <Route path="/crop/:cropId" element={<CropDetail />}>
+            <Route path="diagnose" element={<CropDiagnosis />} />
+            <Route path="fertilizer" element={<FertilizerHistory />} />
+            <Route path="fertilizer/new" element={<AddFertilizer />} />
+            <Route path="irrigation" element={<IrrigationHistory />} />
+            <Route path="irrigation/new" element={<AddIrrigation />} />
           </Route>
         </Route>
 

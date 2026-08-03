@@ -1,4 +1,4 @@
-import type {Request,Response} from "express";
+import type {Request,Response} from "../../types/http.ts";
 import * as fertilizerService from "./fertilizer.service.ts";
 import { createFertilizerSchema } from "./fertilizer.validation.ts";
 import { create } from "zustand";

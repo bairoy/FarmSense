@@ -14,9 +14,11 @@ export const signUp = async (name:string,email: string, password: string) => {
   const {error:dbError} = await supabaseAdmin
   .from("users")
   .insert({
-    id:user.id,
+    id: user.id,
     name,
-    email:user.email
+    // Supabase types this optional, but a user row with no email is not
+    // recoverable - we would have no way to identify the account later.
+    email: user.email!,
   });
   if (dbError) throw dbError;
   return user;

@@ -8,9 +8,9 @@ export default function CreateCrop() {
 
   const [form, setForm] = useState({
     field_id: fieldId!,
-    crop_type: "",
+    crop_type: "Basmati rice",
     sowing_date: "",
-    irrigation_method: "",
+    irrigation_method: "surface canal system",
     status: "active",
   });
 
@@ -25,25 +25,40 @@ export default function CreateCrop() {
       <h2 className="text-xl font-bold mb-4">Create Crop</h2>
 
       <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Crop type"
-          className="border p-2 w-full mb-2"
-          onChange={(e) => setForm({ ...form, crop_type: e.target.value })}
-        />
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Crop Type (Locked to Siraha)
+          </label>
+          <input
+            className="border p-2 w-full rounded bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none"
+            value={form.crop_type}
+            readOnly
+          />
+        </div>
 
-        <input
-          type="date"
-          className="border p-2 w-full mb-2"
-          onChange={(e) => setForm({ ...form, sowing_date: e.target.value })}
-        />
+        <div className="mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Sowing Date
+          </label>
+          <input
+            type="date"
+            className="border p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+            value={form.sowing_date}
+            onChange={(e) => setForm({ ...form, sowing_date: e.target.value })}
+            required
+          />
+        </div>
 
-        <input
-          placeholder="Irrigation"
-          className="border p-2 w-full mb-4"
-          onChange={(e) =>
-            setForm({ ...form, irrigation_method: e.target.value })
-          }
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Irrigation (Locked to Siraha)
+          </label>
+          <input
+            className="border p-2 w-full rounded bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none"
+            value={form.irrigation_method}
+            readOnly
+          />
+        </div>
 
         <button className="bg-green-600 text-white px-4 py-2 rounded">
           Create Crop

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { CreateFieldPayload } from "../field.types";
+import { AreaInput, type AreaValue } from "../components/AreaInput";
 import { getFieldById, updateField } from "../field.service";
 
 export default function EditField() {
@@ -12,8 +13,9 @@ export default function EditField() {
     latitude: 0,
     longitude: 0,
     soil_type: "",
-    area: 0,
   });
+
+  const [area, setArea] = useState<AreaValue>({ bigha: 0, kattha: 0, dhur: 0 });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,8 +35,11 @@ export default function EditField() {
           latitude: data.latitude,
           longitude: data.longitude,
           soil_type: data.soil_type,
-          area: data.area,
         });
+
+        // The backend returns the canonical area already decomposed into
+        // Nepali units, so nothing is converted here.
+        if (data.area?.nepali) setArea(data.area.nepali);
       } catch (err) {
         setError("Failed to load field data.");
       } finally {
@@ -51,11 +56,7 @@ export default function EditField() {
     setForm({
       ...form,
       [name]:
-        name === "latitude" ||
-        name === "longitude" ||
-        name === "area"
-          ? Number(value)
-          : value,
+        name === "latitude" || name === "longitude" ? Number(value) : value,
     });
   };
 
@@ -68,7 +69,7 @@ export default function EditField() {
     setError(null);
 
     try {
-      await updateField(fieldId, form);
+      await updateField(fieldId, { ...form, ...area });
       navigate("/fields");
     } catch (err: any) {
       setError(
@@ -160,20 +161,8 @@ export default function EditField() {
         </div>
 
         {/* Area */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Area (acres)
-          </label>
-          <input
-            name="area"
-            type="number"
-            step="any"
-            value={form.area}
-            onChange={handleChange}
-            className="w-full border p-3 rounded-lg"
-            required
-          />
-        </div>
+        <AreaInput value={area} onChange={setArea} />
+
 
         {/* Submit */}
         <button

@@ -1,0 +1,73 @@
+{
+  "region": "Siraha, Nepal",
+  "_meta": {
+    "description": "Region calibration for Siraha district, Province 2, Nepal (Terai). Kc values and depletion fractions are taken from FAO-56 Table 12 and Table 22; they are NOT invented. GDD phase boundaries are calibrated for local Terai varieties and sowing calendars.",
+    "sources": [
+      "FAO Irrigation and Drainage Paper 56, Allen et al. 1998 - Table 12 (Kc), Table 22 (root depth and depletion fraction p)",
+      "NARC Nepal - varietal and phenology guidance for Terai rice and wheat"
+    ],
+    "note": "Soil values here are the FALLBACK only. At runtime the engine queries ISRIC SoilGrids for per-field soil hydraulics and uses these numbers only when that call fails."
+  },
+  "coordinates": {
+    "latitude": 26.65,
+    "longitude": 86.2
+  },
+  "elevation_m": 100,
+  "soil": {
+    "type": "alluvial",
+    "description": "Alluvial plains typical of the Terai, generally loam to clay loam.",
+    "field_capacity_mm_per_m": 300,
+    "permanent_wilting_point_mm_per_m": 150,
+    "total_available_water_mm_per_m": 150
+  },
+  "crops": {
+    "rice": {
+      "variety": "Terai lowland (e.g. Sarju-52, Radha-4)",
+      "water_model": "paddy",
+      "season": "monsoon (Ashadh-Kartik / Jun-Nov)",
+      "satellite_channel": "sentinel1",
+      "base_temperature_c": 10,
+      "max_temperature_threshold_c": 35,
+      "critical_flowering_temp_c": 33,
+      "root_depth_m": 0.5,
+      "root_depth_min_m": 0.15,
+      "gdd_to_full_root": 900,
+      "depletion_fraction_p": 0.2,
+      "gdd_to_maturity": 2000,
+      "paddy": {
+        "bund_height_mm": 150,
+        "target_depth_mm": 50,
+        "percolation_mm_per_day": 3,
+        "saturated_buffer_mm": 40
+      },
+      "phases": [
+        { "name": "seedling", "gdd_start": 0, "gdd_end": 350, "kc": 1.05 },
+        { "name": "tillering", "gdd_start": 350, "gdd_end": 900, "kc": 1.15 },
+        { "name": "flowering", "gdd_start": 900, "gdd_end": 1400, "kc": 1.2 },
+        { "name": "grain_filling", "gdd_start": 1400, "gdd_end": 2000, "kc": 0.9 }
+      ]
+    },
+    "wheat": {
+      "variety": "Terai winter wheat (e.g. Gautam, Vijay)",
+      "water_model": "depletion",
+      "season": "winter (Mangsir-Chaitra / Nov-Apr)",
+      "satellite_channel": "sentinel2",
+      "base_temperature_c": 5,
+      "max_temperature_threshold_c": 32,
+      "critical_flowering_temp_c": 30,
+      "root_depth_m": 1.5,
+      "root_depth_min_m": 0.2,
+      "gdd_to_full_root": 900,
+      "depletion_fraction_p": 0.55,
+      "gdd_to_maturity": 2100,
+      "phases": [
+        { "name": "establishment", "gdd_start": 0, "gdd_end": 250, "kc": 0.4 },
+        { "name": "tillering", "gdd_start": 250, "gdd_end": 700, "kc": 0.7 },
+        { "name": "stem_elongation", "gdd_start": 700, "gdd_end": 1100, "kc": 1.05 },
+        { "name": "flowering", "gdd_start": 1100, "gdd_end": 1500, "kc": 1.15 },
+        { "name": "grain_filling", "gdd_start": 1500, "gdd_end": 1900, "kc": 0.8 },
+        { "name": "maturity", "gdd_start": 1900, "gdd_end": 2100, "kc": 0.35 }
+      ]
+    }
+  }
+}

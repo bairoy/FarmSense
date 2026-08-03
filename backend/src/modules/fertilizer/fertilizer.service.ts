@@ -20,7 +20,10 @@ export const createFertilizer = async(
     throw new Error("Crop not found or unauthorized");
   }
 
-  const actionDate = payload.action_date?new Date(payload.action_date):new Date();
+  // Stored as an ISO date string. Passing a Date object relies on incidental
+  // JSON serialisation and does not match the column type.
+  const actionDate = (payload.action_date ? new Date(payload.action_date) : new Date())
+    .toISOString();
 
   const {data,error} = await supabase
   .from("fertilizer_actions")
