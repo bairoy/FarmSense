@@ -1,5 +1,5 @@
 import { differenceInDays } from "date-fns";
-import { supabase } from "../../config/supabase.ts";
+import type { Db } from "../../config/supabase.ts";
 import { computeCropTimeline, statusFromScore } from "../crop-state/timeline.engine.ts";
 import { loadRegionConfig } from "../rules/rules.loader.ts";
 import { buildFertilizerPlan } from "./fertilizer.recommender.ts";
@@ -9,7 +9,7 @@ import {
   type IrrigationDecision,
 } from "./irrigation.recommender.ts";
 import { getTreatment } from "../rules/treatments.loader.ts";
-import { describeArea } from "../../utils/landUnits.ts";
+import { UNIT_KEYS, describeArea } from "../../utils/landUnits.ts";
 import { env } from "../../config/env.ts";
 
 /**
@@ -82,8 +82,8 @@ export type FusedCropState = {
   recommendations: string[];
 };
 
-const loadCrop = async (userId: string, cropId: string) => {
-  const { data, error } = await supabase
+const loadCrop = async (db: Db, userId: string, cropId: string) => {
+  const { data, error } = await db
     .from("crop_instances")
     .select(
       "id,crop_type,sowing_date,status,field_id," +
@@ -98,8 +98,8 @@ const loadCrop = async (userId: string, cropId: string) => {
 };
 
 /** Most recent image-based diagnosis, if any. */
-const latestDiagnosis = async (cropId: string) => {
-  const { data } = await supabase
+const latestDiagnosis = async (db: Db, cropId: string) => {
+  const { data } = await db
     .from("crop_images")
     .select("disease_class,confidence,uploaded_at")
     .eq("crop_instance_id", cropId)
@@ -122,16 +122,17 @@ const latestDiagnosis = async (cropId: string) => {
 };
 
 export const getFusedCropState = async (
+  db: Db,
   userId: string,
   cropId: string
 ): Promise<FusedCropState> => {
-  const crop = await loadCrop(userId, cropId);
+  const crop = await loadCrop(db, userId, cropId);
   const region = loadRegionConfig(env.defaultRegion);
   const cropConfig = region.crops[crop.crop_type] ?? region.crops.rice;
 
   const [result, diagnosis] = await Promise.all([
     computeCropTimeline(crop),
-    latestDiagnosis(cropId),
+    latestDiagnosis(db, cropId),
   ]);
 
   const today = result.timeline[result.timeline.length - 1];
@@ -219,9 +220,13 @@ export const getFusedCropState = async (
  * advice and the fertilizer advice cannot contradict each other about whether
  * the crop is water-stressed.
  */
-export const getRecommendations = async (userId: string, cropId: string) => {
-  const crop = await loadCrop(userId, cropId);
-  const state = await getFusedCropState(userId, cropId);
+export const getRecommendations = async (
+  db: Db,
+  userId: string,
+  cropId: string
+) => {
+  const crop = await loadCrop(db, userId, cropId);
+  const state = await getFusedCropState(db, userId, cropId);
   const region = loadRegionConfig(env.defaultRegion);
   const cropConfig = region.crops[crop.crop_type] ?? region.crops.rice;
 
@@ -298,6 +303,6 @@ export const getRecommendations = async (userId: string, cropId: string) => {
     confidence: state.confidence,
     blocked: canQuantify
       ? null
-      : "This field has no recorded area, so water and fertilizer quantities cannot be calculated. Add the field area (in bigha/kattha/dhur) or trace its boundary.",
+      : `This field has no recorded area, so water and fertilizer quantities cannot be calculated. Add the field area (in ${UNIT_KEYS.join("/")}) or trace its boundary.`,
   };
 };

@@ -1,10 +1,10 @@
-import { supabase } from "../../config/supabase.ts";
+import type { Db } from "../../config/supabase.ts";
 import { differenceInDays } from "date-fns";
 import { computeCropTimeline, statusFromScore } from "./timeline.engine.ts";
 import { getFusedCropState } from "../recommendations/cropState.fusion.ts";
 
-const loadOwnedCrop = async (userId: string, cropId: string) => {
-  const { data, error } = await supabase
+const loadOwnedCrop = async (db: Db, userId: string, cropId: string) => {
+  const { data, error } = await db
     .from("crop_instances")
     .select(
       "id,crop_type,sowing_date,field_id," +
@@ -27,6 +27,7 @@ const loadOwnedCrop = async (userId: string, cropId: string) => {
  * state is distinguishable from a simulated or satellite-corrected one.
  */
 export const createCropState = async (
+  db: Db,
   userId: string,
   payload: {
     crop_instance_id: string;
@@ -36,10 +37,10 @@ export const createCropState = async (
     notes?: string;
   }
 ) => {
-  const crop = await loadOwnedCrop(userId, payload.crop_instance_id);
+  const crop = await loadOwnedCrop(db, userId, payload.crop_instance_id);
   const dayNumber = differenceInDays(new Date(), new Date(crop.sowing_date)) + 1;
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("crop_states")
     .insert({
       crop_instance_id: payload.crop_instance_id,
@@ -65,10 +66,10 @@ export const createCropState = async (
   return data;
 };
 
-export const getCropStates = async (userId: string, cropId: string) => {
-  await loadOwnedCrop(userId, cropId);
+export const getCropStates = async (db: Db, userId: string, cropId: string) => {
+  await loadOwnedCrop(db, userId, cropId);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("crop_states")
     .select("*")
     .eq("crop_instance_id", cropId)
@@ -78,8 +79,8 @@ export const getCropStates = async (userId: string, cropId: string) => {
   return data;
 };
 
-export const deleteCropState = async (userId: string, stateId: string) => {
-  const { data: state, error } = await supabase
+export const deleteCropState = async (db: Db, userId: string, stateId: string) => {
+  const { data: state, error } = await db
     .from("crop_states")
     .select("id,crop_instance_id,crop_instances!inner(fields!inner(user_id))")
     .eq("id", stateId)
@@ -88,7 +89,7 @@ export const deleteCropState = async (userId: string, stateId: string) => {
 
   if (error || !state) throw new Error("Crop state not found");
 
-  const { error: deleteError } = await supabase
+  const { error: deleteError } = await db
     .from("crop_states")
     .delete()
     .eq("id", stateId);
@@ -103,11 +104,11 @@ export const deleteCropState = async (userId: string, stateId: string) => {
  * Delegates to the fusion layer rather than computing anything itself, so this
  * endpoint and the recommendation endpoints can never disagree.
  */
-export const computeCropState = (userId: string, cropId: string) =>
-  getFusedCropState(userId, cropId);
+export const computeCropState = (db: Db, userId: string, cropId: string) =>
+  getFusedCropState(db, userId, cropId);
 
 /** The full day-by-day simulation, for charting. */
-export const getTimeline = async (userId: string, cropId: string) => {
-  const crop = await loadOwnedCrop(userId, cropId);
+export const getTimeline = async (db: Db, userId: string, cropId: string) => {
+  const crop = await loadOwnedCrop(db, userId, cropId);
   return computeCropTimeline(crop);
 };

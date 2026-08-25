@@ -89,19 +89,19 @@ if (input.soilDepletion > input.RAW) {
 
 To make this math work, the constants (like $K_c$, RAW, and GDD thresholds) cannot be global. They depend heavily on the specific geography, soil type, and crop variety. 
 
-We scoped the first working implementation strictly to **Siraha, Nepal**.
+We scoped the first working implementation strictly to **Gorakhpur, Uttar Pradesh**.
 
-### Configuration snippet (`regions/siraha.json`)
+### Configuration snippet (`regions/gorakhpur.json`)
 ```json
 {
-  "region": "Siraha, Nepal",
+  "region": "Gorakhpur, Uttar Pradesh, India",
   "soil": {
     "type": "alluvial",
     "total_available_water_mm_per_m": 150
   },
   "crops": {
     "rice": {
-      "variety": "Basmati",
+      "variety": "Eastern UP kharif lowland (e.g. Sarju-52, NDR-359, Swarna)",
       "base_temperature_c": 10,
       "root_depth_m": 0.4,
       "depletion_fraction_p": 0.2,
@@ -116,4 +116,6 @@ We scoped the first working implementation strictly to **Siraha, Nepal**.
 }
 ```
 
-By calculating RAW as `soil.TAW * crop.root_depth * crop.depletion_fraction`, the engine knows exactly how many millimeters of water the Basmati rice can extract from Siraha's alluvial soil before it begins to suffer. This turns FarmSense from a heuristic dashboard into a true scientific digital twin.
+By calculating RAW as `soil.TAW * crop.root_depth * crop.depletion_fraction`, the engine knows exactly how many millimeters of water the rice can extract from the Saryu/Rapti alluvium before it begins to suffer. This turns FarmSense from a heuristic dashboard into a true scientific digital twin.
+
+Nothing in the engine names a district. Every constant above is read from the region file, so a new district is a new JSON file plus `DEFAULT_REGION`, not a code change — which is exactly how this project moved from Nepal's Terai to eastern UP.

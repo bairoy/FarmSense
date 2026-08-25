@@ -80,7 +80,7 @@ export const currentRootDepth = (
  * Effective rainfall: the share of a rainfall event that actually enters the
  * root zone rather than running off.
  *
- * USDA-SCS style approximation. A 60 mm cloudburst on Terai clay loam does not
+ * USDA-SCS style approximation. A 60 mm cloudburst on alluvial clay loam does not
  * deliver 60 mm to the roots - most of it leaves as surface runoff. Counting
  * it in full would make the model believe the field is irrigated when it is
  * not, which is exactly the wrong direction for an irrigation recommendation.
@@ -161,7 +161,7 @@ export const stepWaterBalance = (
  * Irrigation depth needed to refill the root zone to field capacity.
  *
  * Divided by application efficiency: a farmer running a canal or a diesel pump
- * onto a Terai plot loses a substantial fraction to conveyance and uneven
+ * onto a smallholder plot loses a substantial fraction to conveyance and uneven
  * distribution, so applying exactly `depletion` mm leaves the field short.
  */
 export const irrigationRequirement = (

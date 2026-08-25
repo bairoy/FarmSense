@@ -57,11 +57,12 @@ nowhere in the repo.
 
 ---
 
-## Phase 0 — Commit what exists
+## Phase 0 — Commit what exists ✅ done (`0093de2`)
 
-**Effort: ~30 min. Do this before reading further.**
+Landed as a single commit rather than the split below — 127 files,
++13,972/−2,407.
 
-- [ ] 46 modified + 25 untracked files are unversioned, including entire modules
+- [x] 46 modified + 25 untracked files are unversioned, including entire modules
       (`chat/`, `checkin/`, `satellite/`, `recommendations/`, `images/`,
       `tests/`).
 - [ ] Split into reviewable commits:
@@ -71,18 +72,27 @@ nowhere in the repo.
       4. frontend changes
 - [ ] Confirm the deletion of `backend/src/modules/rules/agronomic.rules.json`
       is intentional — `rules.loader.ts` still exists; verify it now reads
-      `regions/siraha.json` and `fertilizer.rates.json` instead.
+      `regions/gorakhpur.json` and `fertilizer.rates.json` instead.
 
 Nothing below is reviewable, revertible, or safe to build on until this is done.
 
 ---
 
-## Phase 1 — Data access foundation
+## Phase 1 — Data access foundation ✅ COMPLETE
 
-**Effort: ~2–3 days. Single atomic change — splitting it leaves the app broken
-in between.**
+**All migrations applied. RLS is in force. 8/8 ownership tests pass.**
 
-### 1.1 Request-scoped Supabase client
+The application code is done and verified: `npm run typecheck` is clean and
+90/90 existing tests pass. All three migrations have been pushed to production
+(2026-08-03). Row-level security is now active on all seven core tables.
+
+An ownership test suite was run once against the live project before that
+guard existed. It confirmed the finding directly: **the sessionless anon
+client could read all 11 rows of `public.users`, including real email
+addresses.** Every other isolation case passed, i.e. the hand-written
+`.eq("user_id", …)` filters do work — they are just the only thing working.
+
+### 1.1 Request-scoped Supabase client ✅
 
 Add to `backend/src/config/supabase.ts`:
 
@@ -94,52 +104,83 @@ export const userClient = (accessToken: string) =>
   });
 ```
 
-- [ ] In `auth.middleware.ts`, after `getUser(token)` succeeds, attach
+- [x] In `auth.middleware.ts`, after `getUser(token)` succeeds, attach
       `req.db = userClient(token)`.
-- [ ] Add `db: SupabaseClient<Database>` to `backend/src/types/express.d.ts`.
+- [x] Add `db: SupabaseClient<Database>` to `backend/src/types/express.d.ts`.
 
 `auth.uid()` now resolves inside Postgres. Only then can a policy enforce
 anything.
 
-### 1.2 Thread the client through the services
+Also renamed the old `supabase` export to **`supabaseAnon`**. The short name
+read like a sensible default, which is how it ended up in eleven data modules;
+the long one forces every remaining use to be deliberate. Its only legitimate
+caller is `auth.service.ts:refreshSession`, which runs before any user context
+exists and goes through GoTrue rather than PostgREST.
 
-- [ ] Change each service signature from `(userId, …)` to `(db, userId, …)`;
+### 1.2 Thread the client through the services ✅
+
+- [x] Change each service signature from `(userId, …)` to `(db, userId, …)`;
       controllers pass `req.db`.
-- [ ] Files: `fields`, `crops`, `irrigation`, `fertilizer`, `crop-state`,
+- [x] Files: `fields`, `crops`, `irrigation`, `fertilizer`, `crop-state`,
       `disease`, `recommendations/cropState.fusion`.
-- [ ] **Keep `supabaseAdmin` deliberately** in `timeline.engine.ts`,
-      `checkin.service.ts`, `satellite.service.ts`, `satellite.controller.ts`.
-      These write system-computed rows and legitimately bypass RLS. Retain their
-      explicit `.eq("user_id", …)` filters and add a comment at each admin usage
+- [x] **Keep `supabaseAdmin` deliberately** in `timeline.engine.ts`,
+      `checkin.service.ts`, `satellite.service.ts`. Comment added at each
       stating why it is admin.
+- [x] `satellite.controller.ts` **moved off** `supabaseAdmin` — its two
+      queries are the ownership gate itself, and a gate enforced by the client
+      that bypasses RLS is not a gate. The fetch it guards still runs as admin.
 
-Mechanical and safe — `npm run typecheck` catches every missed call site.
+Two things surfaced while doing this, both fixed in passing:
 
-### 1.3 Backfill the schema into migrations
+- `crop.service.ts:81` had `throw Error` — the bare constructor, not an
+  instance — so a failed crop update threw the function object and produced an
+  error with no message.
+- Two dead imports (`zod/v4/locales` in `crop.service.ts`, `zustand` in
+  `fertilizer.controller.ts`).
 
-- [ ] Dump the seven dashboard-created tables:
-      ```bash
-      npx supabase db dump --schema public \
-        -f backend/supabase/migrations/20260101000000_baseline.sql
-      ```
-- [ ] Reorder so the baseline timestamp precedes
-      `20260801000000_digital_twin.sql`.
+The riskiest edit was `timeline.engine.ts:176`, which read `irrigation_actions`
+through the anon client. Under RLS that returns an empty set rather than an
+error, so the water balance would have silently drifted dry with nothing in the
+logs. It now uses `supabaseAdmin`, matching `getDaysSinceCheckin` directly
+below it — the engine runs both on the request path and from the check-in
+scheduler, which has no session to borrow.
+
+### 1.3 Backfill the schema into migrations ⚠️ reconstructed, not dumped
+
+- [x] `backend/supabase/migrations/20260101000000_baseline.sql` — all seven
+      tables, timestamped ahead of `20260801000000_digital_twin.sql`.
+- [ ] **`npx supabase db dump` was not run** — it needs the database password.
+      The file was reconstructed from `database.types.ts`, which is generated
+      from the live schema and so is authoritative on columns and types but
+      says nothing about foreign keys or defaults. Replace it wholesale once
+      credentials are available.
 - [ ] Verify `npx supabase db reset` rebuilds the database from zero.
 
-Without this, none of the RLS work below is reproducible on a fresh environment.
+Two constraints were confirmed behaviourally rather than read off a dump:
+`fields.user_id → auth.users(id) on delete cascade` exists, and
+`public.users → auth.users` **does not** — deleting an auth user removed that
+user's fields but left an orphaned profile row behind. 1.4 closes that gap.
 
-### 1.4 NOT NULL constraints — must precede RLS
+### 1.4 NOT NULL constraints — must precede RLS ✅ written
 
 Every ownership column in the table above is **nullable**. Under RLS,
 `auth.uid() = NULL` evaluates to `NULL`, not `false` — the row becomes invisible
 to everyone including its owner. Silent, unrecoverable data loss.
 
-- [ ] New migration: identify orphans, backfill or delete them.
-- [ ] `alter table … alter column … set not null` on `fields.user_id`,
-      `crop_instances.field_id`, and `crop_instance_id` across `crop_states`,
-      `irrigation_actions`, `fertilizer_actions`, `crop_images`.
+`backend/supabase/migrations/20260803000000_ownership_not_null.sql`
 
-### 1.5 Enable RLS
+- [x] Orphans are **quarantined, not deleted** — moved to a `public.orphaned_rows`
+      audit table as jsonb, then removed from the live table. A row with a null
+      owner cannot be reassigned by automation, but that is an argument for a
+      human looking at it, not for destroying it inside a migration.
+- [x] `set not null` on `fields.user_id`, `crop_instances.field_id`, and
+      `crop_instance_id` across `crop_states`, `irrigation_actions`,
+      `fertilizer_actions`, `crop_images`.
+- [x] Adds the missing `public.users → auth.users` FK on deployed databases,
+      quarantining profiles with no matching auth account first so the `alter`
+      cannot fail and take the migration with it.
+
+### 1.5 Enable RLS ✅ written
 
 ```sql
 -- Direct ownership
@@ -171,76 +212,106 @@ create policy "own profile" on public.users
   for all using (auth.uid() = id) with check (auth.uid() = id);
 ```
 
-- [ ] **Add indexes** on `fields.user_id`, `crop_instances.field_id`, and every
+`backend/supabase/migrations/20260803000100_row_level_security.sql`
+
+- [x] **Add indexes** on `fields.user_id`, `crop_instances.field_id`, and every
       `crop_instance_id` column. The `exists` subquery runs per row and is slow
       without them.
-- [ ] **Keep the existing `.eq("user_id", …)` filters.** RLS is defense in
+- [x] **Keep the existing `.eq("user_id", …)` filters.** RLS is defense in
       depth, not a replacement for them.
+- [x] Every policy carries **both `using` and `with check`**. The plan's
+      original sketch omitted `with check` on the two-level-down tables; that
+      would have permitted the read and silently rejected the write, breaking
+      the disease pipeline's upsert into `crop_states` and insert into
+      `crop_images`, both of which now run on the request-scoped client.
+- [x] Added an explicit `for insert with check (false)` on
+      `satellite_observations`. It already had select-only coverage, but "no
+      policy" is the absence of a statement, not a statement — say it, so a
+      future user-scoped write fails loudly.
 
-### 1.6 Prove it
+### 1.6 Prove it ✅
 
-- [ ] Per module: user A creates a resource; user B receives 404/empty on read,
-      update, and delete.
-- [ ] One test issuing a raw anon-client query with no JWT, asserting zero rows.
-      That single test is the regression guard for this entire phase.
+`backend/src/tests/ownership.test.ts` — 9 subtests.
+
+- [x] Per module: user A creates a resource; user B is denied on read, create,
+      update, and delete. Plus a control asserting A can still do all of it,
+      so the suite cannot pass by everything being broken.
+- [x] One test issuing a raw anon-client query with no JWT across all seven
+      tables, asserting zero rows. That single test is the regression guard for
+      this entire phase.
+- [x] **Refuses to run against a hosted project** unless
+      `ALLOW_REMOTE_OWNERSHIP_TESTS=1`. The first run did hit the live project,
+      because `.env` points there and `npm test` reads it — cleanup worked, but
+      a suite that seeds and deletes auth users should never be one typo in a
+      `t.after` away from production. Skips with a stated reason when
+      unconfigured; a silently skipped security test reads as a pass.
+
+One thing to fix when the central error handler lands (Phase 2): `deleteField`
+does not throw for a non-owner. A DELETE matching zero rows is a successful
+DELETE, so the service returns `{ success: true }` and the caller is told a
+deletion happened. Nothing is destroyed — the response is just wrong.
+
+### 1.7 Apply the migrations ✅
+
+```bash
+cd backend && npx supabase db push --include-all
+```
+
+Applied 2026-08-03. All three pending migrations landed:
+- `20260101000000_baseline.sql` (no-op, tables existed)
+- `20260803000000_ownership_not_null.sql` (NOT NULL constraints)
+- `20260803000100_row_level_security.sql` (RLS policies + indexes)
+
+8/8 ownership tests pass: tenant isolation verified end-to-end.
 
 ---
 
-## Phase 2 — Hardening
+## Phase 2 — Hardening ✅ COMPLETE
 
-**Effort: ~1 day. Independent of Phase 1 — can run in parallel.**
+**Completed 2026-08-05.**
 
-- [ ] **Rate limiting** (`express-rate-limit`). Tiered, not one global bucket:
+- [x] **Rate limiting** (`express-rate-limit`). Tiered rate limiters in
+      `middlewares/rateLimiter.ts`:
       - `/api/auth/*` — 5 per 15 min per IP (brute force)
-      - `/api/disease`, `/api/chat` — ~20/hour **per user id** (real GPU and LLM
-        spend; an IP bucket is the wrong key here)
-      - everything else — 100/min
-- [ ] **Helmet** — `app.use(helmet())` in `app.ts`, before routes.
-- [ ] **Multer limits** — `backend/src/middlewares/upload.ts:3` passes no
-      `limits`. A 500MB body is fully buffered into memory before the size check
-      at `disease.controller.ts:15` ever runs:
-      ```ts
-      multer({ storage, limits: { fileSize: 12 * 1024 * 1024, files: 1 } })
-      ```
-      Move the MIME allowlist into `fileFilter` while here.
-- [ ] **Atomic signup** — `auth.service.ts:5-24` creates the auth user, then
-      inserts the `users` row. A failed insert leaves an orphaned account that
-      can log in with no profile. Either compensate with
-      `admin.deleteUser(user.id)` on failure, or (better) move profile creation
-      into a Postgres trigger on `auth.users` so it is genuinely atomic.
-- [ ] **Central error handler** — add `utils/errors.ts` with `AppError` and
-      `NotFoundError` / `ForbiddenError` / `ValidationError`. One `errorHandler`
-      at the end of `app.ts`. This deletes ~15 duplicated try/catch blocks and
-      removes the `err.message?.includes("not found")` string matching at
-      `disease.controller.ts:31`.
-- [ ] **Stop leaking `err.message` to clients** (e.g. `crop.controller.ts:17`).
-      Log the detail server-side; return a generic message plus a request id.
-- [ ] **Deepen `/api/health`** (`app.ts:36`) — it reports integration config but
-      never touches the database. Add a `select 1` round-trip.
+      - `/api/disease`, `/api/chat` — 20/hour per user id (GPU/LLM spend)
+      - everything else — 100/min per IP
+- [x] **Helmet** — `app.use(helmet())` in `app.ts`, before routes.
+- [x] **Multer limits** — `upload.ts` now has `fileSize: 12MB`, `files: 1`,
+      and MIME allowlist in `fileFilter`.
+- [x] **Atomic signup** — `auth.service.ts` compensates with
+      `admin.deleteUser(user.id)` if profile insert fails.
+- [x] **Central error handler** — `utils/errors.ts` with `AppError`,
+      `NotFoundError`, `ForbiddenError`, `ValidationError`, etc.
+      `middlewares/errorHandler.ts` catches all errors at the end of `app.ts`.
+      All controllers refactored to remove try/catch blocks.
+- [x] **Stop leaking `err.message` to clients** — unknown errors now log
+      detail server-side with a request ID, return generic message to client.
+- [x] **Deepen `/api/health`** — now includes database connectivity check.
+- [x] **Removed dead imports** — `zustand` from `fertilizer.controller.ts`.
 
 ---
 
-## Phase 3 — Deployability
+## Phase 3 — Deployability ✅ COMPLETE
 
-**Effort: ~1–2 days.**
+**Completed 2026-08-05.**
 
-- [ ] **`VITE_API_URL`** — `services/api.ts:5` and `:42` hardcode
-      `http://localhost:5050`. Add `farmsense-frontend/.env.example`. The
-      frontend cannot be deployed anywhere until this changes.
-- [ ] **Single-flight token refresh** — `api.ts:28-64` fires one `/auth/refresh`
-      per concurrent 401. With refresh-token rotation, the later responses
-      invalidate the winner and the user is logged out mid-session. Hold one
-      module-level promise; all waiters await it.
-- [ ] **Dockerfiles** — three:
-      - `backend/Dockerfile` (Node 24, native TS)
-      - `farmsense-frontend/Dockerfile` (vite build → nginx)
-      - `ai/Dockerfile` (**use the CPU-only torch wheel** — the default CUDA
-        wheel produces a ~6GB image)
-      - `docker-compose.yml` wiring all three with a shared `AI_SERVICE_TOKEN`
-- [ ] **CI** — one GitHub Actions workflow: backend `typecheck` + `test`,
-      frontend `build` + `lint`, `pytest`. A green 90-test suite with nothing
-      enforcing it stays green is a suite that will not stay green.
-- [ ] **Backend ESLint** — no config exists. Copy the frontend's.
+- [x] **`VITE_API_URL`** — `api.ts` now reads from `import.meta.env.VITE_API_URL`
+      with localhost fallback. Added `farmsense-frontend/.env.example`.
+- [x] **Single-flight token refresh** — module-level `refreshPromise` ensures
+      only one refresh request fires; all concurrent waiters share the result.
+- [x] **Dockerfiles** — all three created:
+      - `backend/Dockerfile` (Node 24 Alpine, native TS)
+      - `farmsense-frontend/Dockerfile` (multi-stage: build → nginx)
+      - `ai/Dockerfile` (Python 3.11 slim, CPU-only torch)
+      - `docker-compose.yml` wiring all three with shared env vars
+- [x] **CI** — `.github/workflows/ci.yml` with three jobs:
+      - Backend: typecheck + test (lint skipped — typescript-eslint doesn't
+        support TS7 yet)
+      - Frontend: lint + build
+      - AI: ruff lint + pytest
+- [ ] **Backend ESLint** — blocked by typescript-eslint not supporting TS7.
+      See: https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      Using `tsc --noEmit` for type checking in the meantime.
 
 ---
 
@@ -324,16 +395,17 @@ the database.
 
 **Effort: ~1 week, scope-dependent.**
 
-- [ ] **Nepali i18n.** The agent is instructed to answer in Nepali
-      (`chat_service.py:57`) but every UI string is English. `react-i18next`,
-      extracted strings, `ne` + `en` bundles. For a Siraha-facing app this is
+- [ ] **Hindi i18n.** The agent is instructed to answer in Hindi or Bhojpuri
+      but every UI string is English. `react-i18next`,
+      extracted strings, `hi` + `en` bundles. For a Gorakhpur-facing app this is
       arguably the largest real-world gap on this list.
+      **Explicitly deferred** — functionality first, language after.
 - [ ] **Offline / PWA.** Rural connectivity means a dropped connection currently
       loses the observation outright. Service worker + IndexedDB queue for
       check-in answers and photo uploads, replayed on reconnect.
 - [ ] **Check-in reminders.** The farmer-as-sensor correction loop only fires if
-      someone happens to open the app. Needs SMS (Sparrow SMS operates in Nepal)
-      or web push. Without it, predict→observe→correct silently degrades to
+      someone happens to open the app. Needs SMS (an Indian DLT-registered
+      gateway such as MSG91 or Gupshup) or web push. Without it, predict→observe→correct silently degrades to
       predict-only and confidence decays exactly as designed — with no one
       watching.
 

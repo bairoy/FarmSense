@@ -1,22 +1,42 @@
 {
   "_meta": {
-    "description": "Recommended nutrient doses for rice and wheat in the Nepal Terai, as structured reference data. An LLM must NEVER generate these numbers - a wrong quantity here is wasted money and a damaged crop, not a cosmetic bug.",
+    "description": "Recommended nutrient doses for rice and wheat in eastern Uttar Pradesh, as structured reference data. An LLM must NEVER generate these numbers - a wrong quantity here is wasted money and a damaged crop, not a cosmetic bug.",
     "sources": [
-      "Nepal Department of Agriculture / NARC - recommended fertilizer doses for cereal crops in the Terai",
-      "Soil Science Division, NARC Khumaltar - nutrient management guidelines"
+      "Uttar Pradesh Department of Agriculture - package of practices for kharif rice and rabi wheat",
+      "ICAR-NRRI Cuttack and ANDUAT Kumarganj - nutrient management for transplanted rice in eastern UP",
+      "ICAR-IIWBR Karnal - fertilizer recommendations for irrigated timely-sown wheat, north-eastern plains zone"
     ],
-    "review_note": "Doses are district-level defaults. A soil test overrides them - if the farmer has one, use their measured values instead of this table.",
+    "review_note": "Doses are district-level defaults for IRRIGATED conditions. A soil test overrides them - if the farmer has one, use their measured values instead of this table. Re-check against the current UP package of practices before any real farmer acts on these.",
     "units": "kg of NUTRIENT per hectare (N, P2O5, K2O). Product quantities are derived from the nutrient_content table below.",
     "caveat": "These assume irrigated conditions with adequate water. Under rainfed or water-stressed conditions, reduce nitrogen - unused N is money lost and increases lodging and disease risk."
   },
   "nutrient_content": {
-    "urea": { "N": 0.46, "P2O5": 0, "K2O": 0, "label": "Urea (46-0-0)" },
-    "dap": { "N": 0.18, "P2O5": 0.46, "K2O": 0, "label": "DAP (18-46-0)" },
-    "mop": { "N": 0, "P2O5": 0, "K2O": 0.6, "label": "Muriate of Potash (0-0-60)" }
+    "urea": {
+      "N": 0.46,
+      "P2O5": 0,
+      "K2O": 0,
+      "label": "Urea (46-0-0)"
+    },
+    "dap": {
+      "N": 0.18,
+      "P2O5": 0.46,
+      "K2O": 0,
+      "label": "DAP (18-46-0)"
+    },
+    "mop": {
+      "N": 0,
+      "P2O5": 0,
+      "K2O": 0.6,
+      "label": "Muriate of Potash (0-0-60)"
+    }
   },
   "crops": {
     "rice": {
-      "total_per_hectare": { "N": 100, "P2O5": 30, "K2O": 30 },
+      "total_per_hectare": {
+        "N": 120,
+        "P2O5": 60,
+        "K2O": 60
+      },
       "organic_recommendation": "4-6 tonnes/ha of well-decomposed farmyard manure, incorporated during land preparation.",
       "splits": [
         {
@@ -25,8 +45,12 @@
           "phase": "seedling",
           "gdd_start": 0,
           "gdd_end": 350,
-          "fraction": { "N": 0.5, "P2O5": 1.0, "K2O": 1.0 },
-          "note": "All phosphorus and potassium go in at basal. Phosphorus is immobile in soil and must be placed in the root zone before the crop needs it."
+          "fraction": {
+            "N": 0.5,
+            "P2O5": 1.0,
+            "K2O": 1.0
+          },
+          "note": "All phosphorus and potassium go in at basal. Phosphorus is immobile in soil and must be placed in the root zone before the crop needs it. Apply zinc sulphate at this operation too if it is needed - do not mix it with DAP, as that locks the zinc up."
         },
         {
           "name": "tillering_topdress",
@@ -34,7 +58,11 @@
           "phase": "tillering",
           "gdd_start": 350,
           "gdd_end": 900,
-          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "fraction": {
+            "N": 0.25,
+            "P2O5": 0,
+            "K2O": 0
+          },
           "note": "Drain the field to a shallow layer before applying urea, then re-flood. Broadcasting urea into deep standing water loses much of it to volatilisation and runoff."
         },
         {
@@ -43,7 +71,11 @@
           "phase": "flowering",
           "gdd_start": 900,
           "gdd_end": 1400,
-          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "fraction": {
+            "N": 0.25,
+            "P2O5": 0,
+            "K2O": 0
+          },
           "note": "This split drives grain number. Skipping it costs yield even if the earlier doses were correct."
         }
       ],
@@ -56,10 +88,15 @@
           "N_multiplier": 0.7,
           "reason": "Excess nitrogen makes blast and brown spot substantially worse. Hold back nitrogen until the disease is controlled."
         }
-      }
+      },
+      "micronutrient_recommendation": "Zinc deficiency is widespread in these soils and shows as khaira - bronzing and stunting 2-3 weeks after transplanting. Apply 25 kg/ha of zinc sulphate at final land preparation if the field has a history of it, or if no zinc has been applied in the last two seasons."
     },
     "wheat": {
-      "total_per_hectare": { "N": 100, "P2O5": 50, "K2O": 25 },
+      "total_per_hectare": {
+        "N": 150,
+        "P2O5": 60,
+        "K2O": 40
+      },
       "organic_recommendation": "4-6 tonnes/ha of well-decomposed farmyard manure, incorporated before sowing.",
       "splits": [
         {
@@ -68,7 +105,11 @@
           "phase": "establishment",
           "gdd_start": 0,
           "gdd_end": 250,
-          "fraction": { "N": 0.5, "P2O5": 1.0, "K2O": 1.0 },
+          "fraction": {
+            "N": 0.5,
+            "P2O5": 1.0,
+            "K2O": 1.0
+          },
           "note": "Place fertilizer with the seed drill where possible; broadcasting phosphorus on the surface leaves most of it out of reach of the roots."
         },
         {
@@ -77,7 +118,11 @@
           "phase": "tillering",
           "gdd_start": 250,
           "gdd_end": 700,
-          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "fraction": {
+            "N": 0.25,
+            "P2O5": 0,
+            "K2O": 0
+          },
           "note": "Crown root initiation is the single most responsive stage for wheat nitrogen. Apply just before or with irrigation so the nitrogen moves into the root zone."
         },
         {
@@ -86,7 +131,11 @@
           "phase": "stem_elongation",
           "gdd_start": 700,
           "gdd_end": 1100,
-          "fraction": { "N": 0.25, "P2O5": 0, "K2O": 0 },
+          "fraction": {
+            "N": 0.25,
+            "P2O5": 0,
+            "K2O": 0
+          },
           "note": "Final nitrogen split. Applying nitrogen after flowering does not increase yield and delays maturity into the pre-monsoon heat."
         }
       ],
@@ -99,7 +148,8 @@
           "N_multiplier": 0.8,
           "reason": "High nitrogen increases rust susceptibility and lodging risk."
         }
-      }
+      },
+      "micronutrient_recommendation": "Apply 25 kg/ha of zinc sulphate at sowing on light-textured or intensively cropped fields. Wheat following rice on the same plot is at higher risk, since the rice crop has already drawn zinc down."
     }
   }
 }

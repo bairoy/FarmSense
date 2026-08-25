@@ -30,22 +30,29 @@ because they are looking at the same object.
 
 ## The decisions
 
-### 1. Land units: Bigha-Kattha-Dhur, not hectares
+### 1. Land units: Bigha-Katha-Dhur, not hectares
 
-Farmers in the Terai don't think in hectares. They think in the units written on
-their land certificate. Ask for "area in acres" and you get a rough conversion
-done in someone's head; ask for "2 bigha 5 kattha" and you get the real number.
+Farmers in eastern UP don't think in hectares. They think in the units written on
+their khatauni. Ask for "area in acres" and you get a rough conversion
+done in someone's head; ask for "2 bigha 5 katha" and you get the real number.
 
 ```
-1 Bigha  = 20 Kattha = 6,772.00 m²  (≈ 0.6772 ha)
-1 Kattha = 20 Dhur   =   338.60 m²
-1 Dhur   =              16.93 m²
+1 Bigha  = 20 Katha = 2,529.285264 m²  (≈ 0.2529 ha = 0.625 acre)
+1 Katha  = 20 Dhur  =   126.4642632 m²
+1 Dhur   =               6.32321316 m²
 ```
 
 **Store canonically in m², convert only at the edges.** No calculation ever has
 to ask which unit it's holding.
 
-These constants are exact by definition of the system — do not "simplify" them
+**The ladder is not hardcoded.** It is read from the active region file and
+served to the frontend by `GET /api/region`, because the bigha is not one unit —
+it is a family of them. The UP *pucca* bigha above is 2529 m²; the Nepal Terai
+bigha this project previously used is 6772 m², 2.7× larger. A copy of the wrong
+constant left behind in one file would silently misreport every field entered
+through it.
+
+These constants are exact by definition — do not "simplify" them
 into rounded values. Every fertilizer quantity is `rate × area`, so a 2% area
 error is a 2% chemical error across a whole field.
 
@@ -55,9 +62,10 @@ error is a 2% chemical error across a whole field.
 const rates = JSON.parse(fs.readFileSync(".../fertilizer.rates.json"));
 ```
 
-Rice: **100:30:30 kg/ha** N:P₂O₅:K₂O, in three splits. Wheat: **100:50:25**.
-NARC/DoA recommended doses for the Terai, stored as structured data — the same
-pattern as `agronomic.rules.json`.
+Rice: **120:60:60 kg/ha** N:P₂O₅:K₂O, in three splits. Wheat: **150:60:40**.
+UP Department of Agriculture / ICAR-NRRI / ICAR-IIWBR recommended doses for
+eastern UP, stored as structured data — the same pattern as
+`agronomic.rules.json`.
 
 **The subtle bit that's easy to get wrong: DAP carries nitrogen.**
 

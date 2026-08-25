@@ -17,7 +17,7 @@ It cannot represent:
 - An **overcast** day vs a **clear** day at the same temperature
 - A **humid** monsoon day vs a **dry** pre-monsoon day
 
-Those are not edge cases. In Siraha, a humid 32°C monsoon day and a dry 32°C
+Those are not edge cases. In Gorakhpur, a humid 32°C monsoon day and a dry 32°C
 April day have genuinely different water demand, and the whole point of the
 system is to tell a farmer which one they're in.
 
@@ -117,7 +117,7 @@ const omega = Math.acos(tanProduct);
 ```
 
 At high latitudes during polar day/night the argument leaves [−1, 1] and `acos`
-returns `NaN`. Siraha is at 26°N so this never fires here — but a `NaN` would
+returns `NaN`. Gorakhpur is at 26.76°N so this never fires here — but a `NaN` would
 propagate silently through the entire water balance, and a guard costs one line.
 
 **ETo is clamped at zero.** On a cold overcast day the radiation term can go

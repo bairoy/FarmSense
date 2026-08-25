@@ -45,7 +45,7 @@ export type PaddyConfig = {
   /** Target depth the farmer maintains during the vegetative stage, mm. */
   targetDepthMm: number;
   /**
-   * Percolation + seepage through the plough pan, mm/day. Terai clay loam sits
+   * Percolation + seepage through the plough pan, mm/day. Alluvial clay loam sits
    * around 2-5 mm/day once well puddled; a sandy or poorly puddled field can
    * lose 10+ and is far more expensive to irrigate.
    */

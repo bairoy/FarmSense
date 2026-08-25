@@ -1,6 +1,10 @@
-// Service-role client: `satellite_observations` has RLS enabled and its policy
-// resolves `auth.uid()`, which is null on the anon client. See the equivalent
-// note in checkin.service.ts.
+// Service-role client, deliberately - not `req.db`.
+//
+// An observation row records what a satellite measured over a field. It is
+// written by the fetcher, which runs with no user session, and the table's
+// policy grants select only. The user-facing ownership gate lives in
+// satellite.controller.ts and runs on the request-scoped client instead.
+// See the equivalent note in checkin.service.ts.
 import { supabaseAdmin as supabase } from "../../config/supabase.ts";
 import { isCdseConfigured } from "../../config/env.ts";
 import { fetchNdvi, type Sentinel2Observation } from "./sentinel2.service.ts";

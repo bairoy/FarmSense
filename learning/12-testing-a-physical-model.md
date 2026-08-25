@@ -7,7 +7,7 @@ the cheapest thing in the codebase to test well, and the most consequential to
 get wrong.
 
 But there's a real difficulty: **we have no ground truth.** Nobody measured the
-soil moisture in a Siraha field on 14 July. We can't write
+soil moisture in a Gorakhpur field on 14 July. We can't write
 `assert(model(day) === reality)`.
 
 So what does "correct" even mean here?

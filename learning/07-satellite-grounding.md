@@ -3,11 +3,11 @@
 ## The problem
 
 The simulation needs to be checked against reality. We have no sensors. But
-there are two European satellites passing over Siraha every few days, and the
+there are two European satellites passing over Gorakhpur every few days, and the
 data is free.
 
 The catch: **rice grows in the monsoon.** Optical satellites cannot see through
-cloud, and Siraha in July can be overcast for weeks. So "just use NDVI" fails
+cloud, and Gorakhpur in July can be overcast for weeks. So "just use NDVI" fails
 for exactly the crop that matters most.
 
 ## The concept

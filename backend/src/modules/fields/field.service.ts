@@ -1,5 +1,6 @@
-import { supabase } from "../../config/supabase.ts";
+import type { Db } from "../../config/supabase.ts";
 import {
+  UNIT_KEYS,
   describeArea,
   polygonAreaSqm,
   polygonCentroid,
@@ -16,7 +17,7 @@ import type {
  * Priority is deliberate:
  *   1. A traced boundary polygon - an actual measurement of the ground.
  *   2. An explicit area_sqm - already canonical, no conversion needed.
- *   3. Bigha-Kattha-Dhur - what farmers know, converted at the edge.
+ *   3. The region's customary units - what farmers know, converted at the edge.
  *
  * Storing one canonical number means no downstream calculation ever has to
  * ask which unit it is holding.
@@ -31,18 +32,16 @@ const resolveArea = (input: CreateFieldInput | UpdateFieldInput) => {
     return { area_sqm: input.area_sqm, derived_from: "area_sqm" as const };
   }
 
-  if (
-    input.bigha !== undefined ||
-    input.kattha !== undefined ||
-    input.dhur !== undefined
-  ) {
+  const supplied = Object.fromEntries(
+    UNIT_KEYS.filter((key) => (input as Record<string, unknown>)[key] !== undefined).map(
+      (key) => [key, (input as Record<string, number>)[key]]
+    )
+  );
+
+  if (Object.keys(supplied).length > 0) {
     return {
-      area_sqm: toSquareMetres({
-        bigha: input.bigha,
-        kattha: input.kattha,
-        dhur: input.dhur,
-      }),
-      derived_from: "nepali_units" as const,
+      area_sqm: toSquareMetres(supplied),
+      derived_from: "local_units" as const,
     };
   }
 
@@ -100,8 +99,23 @@ const decorate = (field: any) =>
         area_acres_legacy: field.area,
       };
 
-export const createField = async (userId: string, payload: CreateFieldInput) => {
-  const { data, error } = await supabase
+/**
+ * Every function below takes the caller's request-scoped client as its first
+ * argument rather than importing a module-level one.
+ *
+ * The explicit `.eq("user_id", userId)` filters are kept even though RLS now
+ * enforces the same thing. They are not redundant: they keep the query
+ * intent readable, and if a policy is ever dropped or mis-migrated the app
+ * does not silently become multi-tenant-readable. Belt and braces, in the
+ * order that matters - the braces are in the database.
+ */
+
+export const createField = async (
+  db: Db,
+  userId: string,
+  payload: CreateFieldInput
+) => {
+  const { data, error } = await db
     .from("fields")
     .insert({ user_id: userId, ...buildRow(payload) } as any)
     .select()
@@ -111,8 +125,8 @@ export const createField = async (userId: string, payload: CreateFieldInput) => 
   return decorate(data);
 };
 
-export const getAllFields = async (userId: string) => {
-  const { data, error } = await supabase
+export const getAllFields = async (db: Db, userId: string) => {
+  const { data, error } = await db
     .from("fields")
     .select("*")
     .eq("user_id", userId);
@@ -121,8 +135,8 @@ export const getAllFields = async (userId: string) => {
   return (data ?? []).map(decorate);
 };
 
-export const getFieldById = async (userId: string, fieldId: string) => {
-  const { data, error } = await supabase
+export const getFieldById = async (db: Db, userId: string, fieldId: string) => {
+  const { data, error } = await db
     .from("fields")
     .select("*")
     .eq("id", fieldId)
@@ -134,11 +148,12 @@ export const getFieldById = async (userId: string, fieldId: string) => {
 };
 
 export const updateField = async (
+  db: Db,
   userId: string,
   fieldId: string,
   payload: UpdateFieldInput
 ) => {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("fields")
     .update(buildRow(payload) as any)
     .eq("id", fieldId)
@@ -150,8 +165,8 @@ export const updateField = async (
   return decorate(data);
 };
 
-export const deleteField = async (userId: string, fieldId: string) => {
-  const { error } = await supabase
+export const deleteField = async (db: Db, userId: string, fieldId: string) => {
+  const { error } = await db
     .from("fields")
     .delete()
     .eq("id", fieldId)

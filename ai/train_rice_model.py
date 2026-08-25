@@ -19,7 +19,7 @@ import json
 import time
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torchvision import models
 
 from config import CLASSES, MODEL_PATH

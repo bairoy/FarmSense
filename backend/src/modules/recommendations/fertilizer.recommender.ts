@@ -6,7 +6,7 @@ import { describeArea, sqmToHectares } from "../../utils/landUnits.ts";
  *
  * The arithmetic is trivial. What matters is where each number comes from:
  *
- *   rate      -> fertilizer.rates.json (NARC/DoA published doses)
+ *   rate      -> fertilizer.rates.json (ICAR / UP Dept of Agriculture doses)
  *   area      -> the field's canonical area_sqm
  *   product   -> derived from nutrient content, not guessed
  *
@@ -35,6 +35,8 @@ export type FertilizerPlan = {
   area: ReturnType<typeof describeArea>;
   season_total_kg: { N: number; P2O5: number; K2O: number };
   organic_recommendation: string;
+  /** Region-specific micronutrient advice; null where the region declares none. */
+  micronutrient_recommendation: string | null;
   splits: FertilizerSplit[];
   current_action: FertilizerSplit | null;
   adjustments: { applied: string; reason: string; multiplier: number }[];
@@ -199,6 +201,7 @@ export const buildFertilizerPlan = (input: {
       K2O: Number((config.total_per_hectare.K2O * hectares).toFixed(2)),
     },
     organic_recommendation: config.organic_recommendation,
+    micronutrient_recommendation: config.micronutrient_recommendation ?? null,
     splits,
     current_action: current,
     adjustments,

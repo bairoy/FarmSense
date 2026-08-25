@@ -43,7 +43,7 @@ model.
 
 The model's job is **explanation and translation**, not computation:
 - Turning "root zone depletion 78mm exceeds RAW 62mm" into "the soil is dry"
-- Answering in Nepali when asked in Nepali
+- Answering in Hindi or Bhojpuri when asked in Hindi or Bhojpuri
 - Knowing which tool the question needs
 - Carrying the confidence caveat into the answer
 

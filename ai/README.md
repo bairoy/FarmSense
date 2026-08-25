@@ -78,7 +78,8 @@ obviously broken, not quietly insecure.
 ## The rule that governs `tools.py`
 
 **The agent never originates an agronomic number.** Fertilizer quantities come
-from a published NARC rate table × a measured field area. Irrigation volumes
+from a published ICAR / UP Dept of Agriculture rate table × a measured field
+area. Irrigation volumes
 come from the FAO-56 water balance. Treatments come from a reviewed lookup gated
 on classifier confidence.
 

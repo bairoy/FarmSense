@@ -1,7 +1,7 @@
 /**
  * Sentinel-1 SAR observation - the rice-season correction channel.
  *
- * Rice in Siraha is transplanted into the monsoon (Jun-Jul). Optical satellites
+ * Rice in Gorakhpur is transplanted into the monsoon (Jun-Jul). Optical satellites
  * are essentially blind for weeks at a time under monsoon cloud, so Sentinel-2
  * cannot ground the rice model. Radar can: SAR is an active microwave sensor
  * and cloud is transparent at C-band.
@@ -88,7 +88,7 @@ export const fetchBackscatter = async (
     extra: {
       acquisitionMode: "IW", // Interferometric Wide - the standard land mode
       polarization: "DV", // dual VV+VH
-      // Radiometric terrain correction. The Terai is flat so this changes
+      // Radiometric terrain correction. The Gangetic plain is flat so this changes
       // little here, but leaving it off would make the same field read
       // differently between ascending and descending passes.
       orthorectify: true,

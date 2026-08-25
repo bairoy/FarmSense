@@ -47,7 +47,7 @@ export type IrrigationDecision = {
   caveats: string[];
 };
 
-/** Typical Terai diesel pump discharge, litres/second. Used only to translate
+/** Typical smallholder diesel pump discharge, litres/second. Used only to translate
  *  a volume into something a farmer can time. */
 const PUMP_LITRES_PER_SECOND = 10;
 

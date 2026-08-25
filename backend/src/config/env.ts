@@ -41,7 +41,7 @@ export const env = {
   cdseClientId: process.env.CDSE_CLIENT_ID ?? "",
   cdseClientSecret: process.env.CDSE_CLIENT_SECRET ?? "",
 
-  defaultRegion: optional("DEFAULT_REGION", "siraha"),
+  defaultRegion: optional("DEFAULT_REGION", "gorakhpur"),
 };
 
 export const isR2Configured = (): boolean =>

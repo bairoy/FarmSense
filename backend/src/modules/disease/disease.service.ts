@@ -1,5 +1,5 @@
 import { differenceInDays } from "date-fns";
-import { supabase } from "../../config/supabase.ts";
+import type { Db } from "../../config/supabase.ts";
 import { classifyCropImage } from "../../utils/ai.client.ts";
 import { getTreatment } from "../rules/treatments.loader.ts";
 import {
@@ -17,8 +17,8 @@ import { statusFromScore } from "../crop-state/timeline.engine.ts";
  * join to `fields` is what enforces ownership - `crop_instances` itself has no
  * user_id column.
  */
-const assertCropOwned = async (userId: string, cropId: string) => {
-  const { data, error } = await supabase
+const assertCropOwned = async (db: Db, userId: string, cropId: string) => {
+  const { data, error } = await db
     .from("crop_instances")
     .select("id,crop_type,sowing_date,fields!inner(user_id)")
     .eq("id", cropId)
@@ -49,11 +49,12 @@ const assertCropOwned = async (userId: string, cropId: string) => {
  * rather than a disconnected demo.
  */
 export const analyseCropImage = async (
+  db: Db,
   userId: string,
   cropId: string,
   file: { buffer: Buffer; originalname: string }
 ) => {
-  const crop = await assertCropOwned(userId, cropId);
+  const crop = await assertCropOwned(db, userId, cropId);
 
   const prediction = await classifyCropImage(file.buffer, file.originalname);
   const treatment = getTreatment(prediction.disease, prediction.confidence);
@@ -86,7 +87,7 @@ export const analyseCropImage = async (
   // per crop per day, so a farmer photographing the same crop twice in one day
   // would otherwise hit a duplicate-key error and lose the second diagnosis.
   // The later photo is the more current observation, so it supersedes.
-  const { data: state, error: stateError } = await supabase
+  const { data: state, error: stateError } = await db
     .from("crop_states")
     .upsert({
       crop_instance_id: cropId,
@@ -121,7 +122,7 @@ export const analyseCropImage = async (
   // unconfigured left the photo history empty and, worse, hid the diagnosis
   // from the fused crop state, which reads its most recent diagnosis from
   // here to cap the health score.
-  const { error: imageError } = await supabase.from("crop_images").insert({
+  const { error: imageError } = await db.from("crop_images").insert({
     crop_instance_id: cropId,
     crop_state_id: state?.id ?? null,
     r2_key: imageKey,
@@ -190,10 +191,10 @@ const scoreFromDiagnosis = (prediction: {
   return Math.round(100 - (100 - floor) * prediction.confidence);
 };
 
-export const getCropImages = async (userId: string, cropId: string) => {
-  await assertCropOwned(userId, cropId);
+export const getCropImages = async (db: Db, userId: string, cropId: string) => {
+  await assertCropOwned(db, userId, cropId);
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("crop_images")
     .select("*")
     .eq("crop_instance_id", cropId)

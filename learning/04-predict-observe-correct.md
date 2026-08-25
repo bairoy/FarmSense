@@ -62,7 +62,7 @@ Every constant in the prediction step now traces to a published source:
 | Quantity | Source | File |
 |---|---|---|
 | ETo (evaporative demand) | FAO-56 Penman-Monteith, eq. 6 | `rules/eto.ts` |
-| Kc (crop coefficient) | FAO-56 Table 12 | `rules/regions/siraha.json` |
+| Kc (crop coefficient) | FAO-56 Table 12 | `rules/regions/gorakhpur.json` |
 | p (depletion fraction) | FAO-56 Table 22, adjusted by eq. 84 | `rules/waterBalance.ts` |
 | TAW (soil water capacity) | ISRIC SoilGrids, per field | `utils/soilgrids.service.ts` |
 | Radiation, 2m wind | NASA POWER | `utils/nasapower.service.ts` |

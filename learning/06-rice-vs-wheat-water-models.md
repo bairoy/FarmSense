@@ -12,7 +12,7 @@ constants — a different `min_soil_moisture`, a different `critical_moisture`.
 
 ### Wheat: an upland crop, and a bucket
 
-Wheat in Siraha is sown into dry soil in November and irrigated periodically.
+Wheat in Gorakhpur is sown into dry soil in November and irrigated periodically.
 The root zone behaves like a bucket:
 
 - It fills from rain and irrigation

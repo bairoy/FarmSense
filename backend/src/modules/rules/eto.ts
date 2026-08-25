@@ -36,7 +36,7 @@ export type EtoInputs = {
   solarRadiationMj: number;
   /** Field latitude in decimal degrees. */
   latitude: number;
-  /** Elevation above sea level, m. Siraha (Terai) sits near 100 m. */
+  /** Elevation above sea level, m. Gorakhpur sits near 84 m. */
   elevationM: number;
   /** Day of year, 1-366. */
   dayOfYear: number;

@@ -3,9 +3,9 @@
  *
  * https://rest.isric.org/soilgrids/v2.0/docs
  *
- * Why this replaces the hardcoded constants in regions/siraha.json: those
+ * Why this replaces the hardcoded constants in the region config: those
  * numbers ("alluvial, TAW 150 mm/m") describe the district as a whole. Two
- * fields three kilometres apart in the Terai can differ substantially in clay
+ * fields three kilometres apart on the Gangetic plain can differ substantially in clay
  * content, and Total Available Water is directly proportional to that. A wrong
  * TAW propagates straight into a wrong irrigation volume.
  *
@@ -35,7 +35,7 @@ export type SoilProfile = {
  *
  * 0-30cm covers the wheat root zone and most of the rice root zone. Deeper
  * layers matter less because neither crop extracts much water below 60cm in
- * Terai conditions.
+ * conditions on the eastern Indo-Gangetic plain.
  *
  * Units in the API response are scaled integers - see `unit_measure.d_factor`
  * in the payload. wv0033 (water content at 33 kPa ≈ field capacity) and
@@ -51,7 +51,7 @@ const cache = new Map<string, SoilProfile>();
 const cacheKey = (lat: number, lon: number) =>
   `${lat.toFixed(3)},${lon.toFixed(3)}`;
 
-/** USDA texture triangle, reduced to the classes that occur in the Terai. */
+/** USDA texture triangle, reduced to the classes that occur on the alluvial plain. */
 const classifyTexture = (sand: number, silt: number, clay: number): string => {
   if (clay >= 40) return "clay";
   if (clay >= 27 && sand <= 45) return "clay loam";

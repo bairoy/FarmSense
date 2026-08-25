@@ -1,5 +1,5 @@
 import { differenceInDays, addDays } from "date-fns";
-import { supabase, supabaseAdmin } from "../../config/supabase.ts";
+import { supabaseAdmin } from "../../config/supabase.ts";
 import { getHistoricalWeather, type WeatherDay } from "../../utils/weather.service.ts";
 import { getPowerDaily, type PowerDay } from "../../utils/nasapower.service.ts";
 import { getSoilProfile } from "../../utils/soilgrids.service.ts";
@@ -173,7 +173,17 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     }),
     getPowerDaily(latitude, longitude, startStr, endStr),
     getSoilProfile(latitude, longitude, region.soil),
-    supabase
+    // Service-role client, for the same reason as getDaysSinceCheckin below:
+    // the engine runs both on the request path and from the check-in
+    // scheduler, which has no user session to borrow. Under RLS a sessionless
+    // client reads back an empty set rather than erroring, so this query would
+    // silently report "no irrigation ever" and the water balance would drift
+    // dry with nothing in the logs to say why.
+    //
+    // Safe because ownership is already settled: the caller resolved `crop`
+    // through a user-scoped query before reaching here, and this only reads
+    // rows belonging to that crop.
+    supabaseAdmin
       .from("irrigation_actions")
       .select("action_date,amount")
       .eq("crop_instance_id", crop.id)

@@ -118,7 +118,7 @@ so plainly in your answer and tell the farmer to check the field themselves."
 ```ts
 blocked: canQuantify ? null
   : "This field has no recorded area, so water and fertilizer quantities cannot
-     be calculated. Add the field area (in bigha/kattha/dhur) or trace its boundary."
+     be calculated. Add the field area (in bigha/katha/dhur) or trace its boundary."
 ```
 
 Without an area we cannot compute a quantity. Guessing one produces a confident,

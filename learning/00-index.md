@@ -26,8 +26,8 @@ way.
 
 ## The one-paragraph version
 
-FarmSense estimates what is happening inside a rice or wheat field in Siraha,
-Nepal, without any sensors in that field. It does this by simulating the crop
+FarmSense estimates what is happening inside a rice or wheat field in Gorakhpur,
+Uttar Pradesh, without any sensors in that field. It does this by simulating the crop
 from physics (weather → evaporative demand → soil water → stress), then
 correcting that simulation whenever an independent observation arrives (a
 satellite pass, a farmer's answer, a photo diagnosis). Every output carries how

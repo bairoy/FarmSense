@@ -24,8 +24,8 @@ import os
 from pathlib import Path
 
 import torch
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Subset
+from torchvision import transforms
 from torchvision.datasets import ImageFolder
 
 from config import BASE_DIR, CLASSES

@@ -1,10 +1,18 @@
 import type { User } from "@supabase/supabase-js";
+import type { Db } from "../config/supabase.ts";
 
 declare global {
   namespace Express {
     interface Request {
       /** Populated by requireAuth. Absent on unauthenticated routes. */
       user?: User;
+      /**
+       * Supabase client scoped to this request's user, populated by
+       * requireAuth alongside `user`. Queries made through it run as that
+       * user inside Postgres, so RLS applies. Absent on unauthenticated
+       * routes for the same reason `user` is.
+       */
+      db?: Db;
     }
   }
 }

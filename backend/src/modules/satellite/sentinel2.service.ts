@@ -1,7 +1,7 @@
 /**
  * Sentinel-2 optical observation - the wheat-season correction channel.
  *
- * Wheat in Siraha grows Nov-Apr, the dry winter. Skies are mostly clear, so
+ * Wheat in Gorakhpur grows Nov-Apr, the dry rabi winter. Skies are mostly clear, so
  * optical works well and NDVI is a genuine independent measurement of canopy
  * vigour. During the rice monsoon it is largely useless (see
  * sentinel1.service.ts for that season).
