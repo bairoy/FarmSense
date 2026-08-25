@@ -1,0 +1,86 @@
+{
+  "region": "Gorakhpur, Uttar Pradesh, India",
+  "_meta": {
+    "description": "Region calibration for Gorakhpur district, Uttar Pradesh (eastern Indo-Gangetic plain). Kc values and depletion fractions are taken from FAO-56 Table 12 and Table 22; they are NOT invented. GDD phase boundaries are set for the varieties and sowing calendars used in Purvanchal.",
+    "sources": [
+      "FAO Irrigation and Drainage Paper 56, Allen et al. 1998 - Table 12 (Kc), Table 22 (root depth and depletion fraction p)",
+      "ICAR-NRRI and ANDUAT Kumarganj - rice varietal and phenology guidance for eastern Uttar Pradesh",
+      "ICAR-IIWBR Karnal - wheat phenology and stage guidance for the north-eastern plains zone"
+    ],
+    "note": "Soil values here are the FALLBACK only. At runtime the engine queries ISRIC SoilGrids for per-field soil hydraulics and uses these numbers only when that call fails.",
+    "review_note": "Phase boundaries carried over from the previous Terai calibration and adjusted for Purvanchal sowing dates. They are literature defaults until a season of local ground truth exists - see the pilot plan."
+  },
+  "coordinates": {
+    "latitude": 26.76,
+    "longitude": 83.37
+  },
+  "elevation_m": 84,
+  "land_units": {
+    "system": "bigha-katha-dhur",
+    "description": "The customary revenue units of eastern Uttar Pradesh. A farmer in Gorakhpur reads bigha and katha off their khatauni; they do not think in hectares.",
+    "source": "Uttar Pradesh revenue standard - 1 pucca bigha = 3025 sq yd = 27,225 sq ft = 0.625 acre. Subdivided 20 katha to the bigha and 20 dhur to the katha, as used across Purvanchal.",
+    "caveat": "The bigha is NOT uniform across Uttar Pradesh. This file uses the pucca bigha. A district that measures in kachha bigha or in biswa needs its own region file - do not adjust these constants in place.",
+    "levels": [
+      { "key": "bigha", "label": "Bigha", "label_local": "बीघा", "sqm": 2529.285264 },
+      { "key": "katha", "label": "Katha", "label_local": "कट्ठा", "sqm": 126.4642632 },
+      { "key": "dhur", "label": "Dhur", "label_local": "धुर", "sqm": 6.32321316 }
+    ]
+  },
+  "soil": {
+    "type": "alluvial",
+    "description": "Indo-Gangetic alluvium of the Saryu/Rapti plain, generally loam to clay loam, with heavy and seasonally waterlogged patches in the low-lying tal areas.",
+    "field_capacity_mm_per_m": 300,
+    "permanent_wilting_point_mm_per_m": 150,
+    "total_available_water_mm_per_m": 150
+  },
+  "crops": {
+    "rice": {
+      "variety": "Eastern UP kharif lowland (e.g. Sarju-52, NDR-359, Swarna/MTU-7029)",
+      "water_model": "paddy",
+      "season": "kharif (Jun-Nov)",
+      "satellite_channel": "sentinel1",
+      "base_temperature_c": 10,
+      "max_temperature_threshold_c": 35,
+      "critical_flowering_temp_c": 33,
+      "root_depth_m": 0.5,
+      "root_depth_min_m": 0.15,
+      "gdd_to_full_root": 900,
+      "depletion_fraction_p": 0.2,
+      "gdd_to_maturity": 2000,
+      "paddy": {
+        "bund_height_mm": 150,
+        "target_depth_mm": 50,
+        "percolation_mm_per_day": 3,
+        "saturated_buffer_mm": 40
+      },
+      "phases": [
+        { "name": "seedling", "gdd_start": 0, "gdd_end": 350, "kc": 1.05 },
+        { "name": "tillering", "gdd_start": 350, "gdd_end": 900, "kc": 1.15 },
+        { "name": "flowering", "gdd_start": 900, "gdd_end": 1400, "kc": 1.2 },
+        { "name": "grain_filling", "gdd_start": 1400, "gdd_end": 2000, "kc": 0.9 }
+      ]
+    },
+    "wheat": {
+      "variety": "North-eastern plains zone irrigated wheat (e.g. HD-2967, DBW-187, HD-3086)",
+      "water_model": "depletion",
+      "season": "rabi (Nov-Apr)",
+      "satellite_channel": "sentinel2",
+      "base_temperature_c": 5,
+      "max_temperature_threshold_c": 32,
+      "critical_flowering_temp_c": 30,
+      "root_depth_m": 1.5,
+      "root_depth_min_m": 0.2,
+      "gdd_to_full_root": 900,
+      "depletion_fraction_p": 0.55,
+      "gdd_to_maturity": 2100,
+      "phases": [
+        { "name": "establishment", "gdd_start": 0, "gdd_end": 250, "kc": 0.4 },
+        { "name": "tillering", "gdd_start": 250, "gdd_end": 700, "kc": 0.7 },
+        { "name": "stem_elongation", "gdd_start": 700, "gdd_end": 1100, "kc": 1.05 },
+        { "name": "flowering", "gdd_start": 1100, "gdd_end": 1500, "kc": 1.15 },
+        { "name": "grain_filling", "gdd_start": 1500, "gdd_end": 1900, "kc": 0.8 },
+        { "name": "maturity", "gdd_start": 1900, "gdd_end": 2100, "kc": 0.35 }
+      ]
+    }
+  }
+}
