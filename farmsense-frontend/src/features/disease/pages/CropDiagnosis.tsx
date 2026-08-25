@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { analyseCropImage, getCropImages } from "../disease.service";
 import type { AnalysisResult, CropImage } from "../disease.types";
+import { apiErrorMessage } from "../../../services/apiError";
 
 /**
  * The crop photo diagnosis screen.
@@ -53,10 +54,12 @@ export default function CropDiagnosis() {
       const analysis = await analyseCropImage(cropId, file, setProgress);
       setResult(analysis);
       setHistory(await getCropImages(cropId));
-    } catch (err: any) {
+    } catch (err) {
       setError(
-        err.response?.data?.error ??
+        apiErrorMessage(
+          err,
           "Could not analyse the photo. Check your connection and try again."
+        )
       );
     } finally {
       setUploading(false);

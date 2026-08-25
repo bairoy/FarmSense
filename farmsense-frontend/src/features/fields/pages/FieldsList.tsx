@@ -115,7 +115,7 @@ export default function FieldsList() {
     try {
       const res = await getFields();
       setFields(res.data);
-    } catch (err) {
+    } catch {
       console.error("Failed to fetch fields");
     } finally {
       setLoading(false);
@@ -216,7 +216,7 @@ export default function FieldsList() {
                     </td>
 
                     <td className="p-4 text-gray-700">
-                      {field.area ? field.area.nepali_label : "not recorded"}
+                      {field.area ? field.area.area_label : "not recorded"}
                     </td>
 
                     <td className="p-4 text-center space-x-4">

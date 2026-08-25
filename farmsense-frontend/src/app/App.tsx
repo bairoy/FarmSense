@@ -8,6 +8,7 @@ import Login from "../features/auth/pages/Login";
 import Register from "../features/auth/pages/Register";
 import Dashboard from "../features/dashboard/Dashboard";
 import AddField from "../features/fields/pages/AddField";
+import EditField from "../features/fields/pages/EditField";
 import FieldDetails from "../features/fields/pages/FieldDetails";
 import FieldsList from "../features/fields/pages/FieldsList";
 import CropDetail from "../features/crops/pages/CropDetail";
@@ -34,6 +35,10 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/fields" element={<FieldsList />} />
           <Route path="/fields/new" element={<AddField />} />
+          {/* Must precede /field/:fieldId - "edit" would otherwise be captured
+              as a field id and render FieldDetails for a field that doesn't
+              exist. FieldsList has linked here all along with no route to match. */}
+          <Route path="/field/edit/:fieldId" element={<EditField />} />
           <Route path="/field/:fieldId" element={<FieldDetails />}>
             <Route path="crops" element={<CropsByField />} />
             <Route path="crops/new" element={<CreateCrop />} />

@@ -16,9 +16,11 @@ export function ChatMessage({ message }: Props) {
             : "bg-gray-100 text-gray-800 rounded-bl-md"
         }`}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <div className="whitespace-pre-wrap break-words leading-relaxed">
+          {message.content}
+        </div>
         <p
-          className={`text-[10px] mt-1 ${
+          className={`text-[10px] mt-1.5 ${
             isUser ? "text-green-200" : "text-gray-400"
           }`}
         >

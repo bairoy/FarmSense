@@ -10,7 +10,8 @@ The design rule that matters:
     THE AGENT NEVER COMPUTES AN AGRONOMIC NUMBER.
 
 Every tool here is a thin wrapper over a backend endpoint. Fertilizer
-quantities come from a published NARC rate table times a measured field area.
+quantities come from a published ICAR / UP Dept of Agriculture rate table times a
+measured field area.
 Irrigation volumes come from the FAO-56 water balance. Treatments come from a
 reviewed lookup keyed on a confidence-gated classification.
 
@@ -189,7 +190,7 @@ def get_fertilizer_recommendation(crop_id: str, token: str) -> str:
 
     lines = [_confidence_preamble(data.get("confidence", {}))]
     lines.append(
-        f"Fertilizer plan for {plan['area']['nepali_label']} "
+        f"Fertilizer plan for {plan['area']['area_label']} "
         f"({plan['area']['hectares']} ha) of {plan['crop']}."
     )
     lines.append(
@@ -198,6 +199,13 @@ def get_fertilizer_recommendation(crop_id: str, token: str) -> str:
         f"{plan['season_total_kg']['K2O']} kg K2O."
     )
     lines.append(f"Organic: {plan['organic_recommendation']}")
+
+    # Zinc deficiency is endemic in the Gangetic alluvium and is the most common
+    # micronutrient constraint on rice yield there. It comes from the same rate
+    # file as everything else, so the agent may repeat it but never invent it.
+    micronutrient = plan.get("micronutrient_recommendation")
+    if micronutrient:
+        lines.append(f"Micronutrients: {micronutrient}")
 
     current = plan.get("current_action")
     if current:
@@ -247,8 +255,10 @@ def analyze_crop_image(crop_id: str, image_bytes: bytes, filename: str, token: s
     diagnosis = data["diagnosis"]
 
     lines = [
-        f"Diagnosis: {diagnosis['disease'].replace('_', ' ')} "
-        f"({diagnosis['confidence'] * 100:.0f}% confidence)."
+        (
+            f"Diagnosis: {diagnosis['disease'].replace('_', ' ')} "
+            f"({diagnosis['confidence'] * 100:.0f}% confidence)."
+        )
     ]
 
     # The gate. When the classifier is unsure we say so and ask for a better
@@ -328,7 +338,8 @@ TOOL_SCHEMAS = [
         "name": "get_fertilizer_recommendation",
         "description": (
             "Get the fertilizer plan: which products, how many kg, and when, computed "
-            "from official NARC rate tables and the field's measured area. Use for any "
+            "from official ICAR / UP Dept of Agriculture rate tables and the field's measured "
+            "area. Use for any "
             "question about urea, DAP, potash, NPK, or top-dressing. NEVER state a "
             "fertilizer quantity from your own knowledge - always call this tool."
         ),

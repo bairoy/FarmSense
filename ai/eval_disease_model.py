@@ -22,7 +22,7 @@ from collections import defaultdict
 
 import torch
 
-from config import CLASSES, CONFIDENCE_GATE, MODEL_PATH, BASE_DIR
+from config import BASE_DIR, CLASSES, CONFIDENCE_GATE, MODEL_PATH
 from dataset import SPLIT_RATIOS, SPLIT_SEED, load_splits
 from disease_model import build_model
 
@@ -46,7 +46,7 @@ def collect_predictions(model, loader):
 
 def confusion_matrix(y_true, y_pred, n):
     matrix = [[0] * n for _ in range(n)]
-    for truth, prediction in zip(y_true, y_pred):
+    for truth, prediction in zip(y_true, y_pred, strict=True):
         matrix[truth][prediction] += 1
     return matrix
 
@@ -79,7 +79,7 @@ def calibration(y_true, y_pred, y_conf, bins=5):
     """
     buckets = defaultdict(lambda: {"n": 0, "correct": 0, "conf_sum": 0.0})
 
-    for truth, prediction, confidence in zip(y_true, y_pred, y_conf):
+    for truth, prediction, confidence in zip(y_true, y_pred, y_conf, strict=True):
         index = min(int(confidence * bins), bins - 1)
         bucket = buckets[index]
         bucket["n"] += 1
@@ -102,7 +102,11 @@ def calibration(y_true, y_pred, y_conf, bins=5):
 
 def gate_effect(y_true, y_pred, y_conf):
     """What the confidence gate actually buys us on the test set."""
-    above = [(t, p) for t, p, c in zip(y_true, y_pred, y_conf) if c >= CONFIDENCE_GATE]
+    above = [
+        (t, p)
+        for t, p, c in zip(y_true, y_pred, y_conf, strict=True)
+        if c >= CONFIDENCE_GATE
+    ]
     below = len(y_true) - len(above)
 
     accuracy_above = (
@@ -127,7 +131,7 @@ def main() -> None:
     y_true, y_pred, y_conf = collect_predictions(model, test_loader)
 
     matrix = confusion_matrix(y_true, y_pred, len(CLASSES))
-    accuracy = sum(t == p for t, p in zip(y_true, y_pred)) / len(y_true)
+    accuracy = sum(t == p for t, p in zip(y_true, y_pred, strict=True)) / len(y_true)
     classes = per_class_metrics(matrix)
     gate = gate_effect(y_true, y_pred, y_conf)
     bins = calibration(y_true, y_pred, y_conf)
@@ -139,9 +143,11 @@ def main() -> None:
         "",
         "## Setup",
         "",
-        f"- Architecture: ResNet-18, ImageNet-pretrained, 4-way head",
-        f"- Split: {SPLIT_RATIOS[0]:.0%} train / {SPLIT_RATIOS[1]:.0%} val / "
-        f"{SPLIT_RATIOS[2]:.0%} test, seed {SPLIT_SEED}",
+        "- Architecture: ResNet-18, ImageNet-pretrained, 4-way head",
+        (
+            f"- Split: {SPLIT_RATIOS[0]:.0%} train / {SPLIT_RATIOS[1]:.0%} val / "
+            f"{SPLIT_RATIOS[2]:.0%} test, seed {SPLIT_SEED}"
+        ),
         f"- Test images: {len(y_true)}",
         "",
         "## Headline",
@@ -171,10 +177,14 @@ def main() -> None:
         "",
         f"The service withholds a treatment recommendation below {gate['gate']:.2f}.",
         "",
-        f"- Predictions passing the gate: {gate['passed']} "
-        f"({100 - gate['withheld_pct']:.1f}%)",
-        f"- Withheld (farmer asked for another photo): {gate['withheld']} "
-        f"({gate['withheld_pct']:.1f}%)",
+        (
+            f"- Predictions passing the gate: {gate['passed']} "
+            f"({100 - gate['withheld_pct']:.1f}%)"
+        ),
+        (
+            f"- Withheld (farmer asked for another photo): {gate['withheld']} "
+            f"({gate['withheld_pct']:.1f}%)"
+        ),
         f"- Accuracy among predictions that passed: {gate['accuracy_above_gate']:.2%}",
         "",
         "## Calibration",

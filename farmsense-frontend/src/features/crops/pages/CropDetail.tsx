@@ -21,6 +21,7 @@ import { RecommendationPanel } from "../../recommendations/RecommendationPanel";
 import { CheckinPrompt } from "../../recommendations/CheckinPrompt";
 import { ConfidenceBadge } from "../../../components/ConfidenceBadge";
 import { ChatPanel } from "../../chat";
+import type { TimelineDay } from "../crop.types";
 
 export default function CropDetail() {
   const { cropId } = useParams();
@@ -34,7 +35,7 @@ export default function CropDetail() {
   const [bundle, setBundle] = useState<RecommendationBundle | null>(null);
   const [analysing, setAnalysing] = useState(false);
 
-  const [timeline, setTimeline] = useState<any[]>([]);
+  const [timeline, setTimeline] = useState<TimelineDay[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [waterModel, setWaterModel] = useState<"depletion" | "paddy">("depletion");
 

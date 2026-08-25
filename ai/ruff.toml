@@ -1,0 +1,43 @@
+# Ruff configuration for the FarmSense AI service.
+#
+# The rule set is pinned explicitly rather than left to ruff's defaults. Those
+# defaults widen between releases, so CI running an unpinned `ruff check .`
+# would start failing on a green branch the day a new ruff ships - which is how
+# a lint step trains people to ignore it.
+
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # import sorting
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "BLE",  # blind except
+    "ISC",  # implicit string concatenation
+    "PLR",  # pylint refactor
+    "TRY",  # exception handling antipatterns
+]
+
+ignore = [
+    # FastAPI's dependency injection *requires* calls in argument defaults:
+    # `file: UploadFile = File(...)` is the documented idiom, and B008 has no
+    # way to tell it apart from the mutable-default bug it exists to catch.
+    "B008",
+    # TRY003: long messages in raised exceptions. The alternative is a wrapper
+    # class per error, which is more indirection than this service needs.
+    "TRY003",
+    # PLR2004: the only "magic values" here are HTTP status codes. `== 401` is
+    # clearer than a HTTP_UNAUTHORIZED constant defined once and used twice.
+    "PLR2004",
+    # TRY300: prefers `else` over a trailing `return` in `try`. Both read fine,
+    # and the rule fires on code where the try body is a single call.
+    "TRY300",
+]
+
+[lint.per-file-ignores]
+# Tests deliberately reach for internals and repeat magic numbers; the numbers
+# are the point of the assertion.
+"tests/*" = ["PLR2004"]

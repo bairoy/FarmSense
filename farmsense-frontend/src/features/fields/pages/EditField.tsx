@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { CreateFieldPayload } from "../field.types";
 import { AreaInput, type AreaValue } from "../components/AreaInput";
 import { getFieldById, updateField } from "../field.service";
+import { apiErrorMessage } from "../../../services/apiError";
 
 export default function EditField() {
   const { fieldId } = useParams();
@@ -15,7 +16,7 @@ export default function EditField() {
     soil_type: "",
   });
 
-  const [area, setArea] = useState<AreaValue>({ bigha: 0, kattha: 0, dhur: 0 });
+  const [area, setArea] = useState<AreaValue>({});
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,10 +38,10 @@ export default function EditField() {
           soil_type: data.soil_type,
         });
 
-        // The backend returns the canonical area already decomposed into
-        // Nepali units, so nothing is converted here.
-        if (data.area?.nepali) setArea(data.area.nepali);
-      } catch (err) {
+        // The backend returns the canonical area already decomposed into the
+        // region's customary units, so nothing is converted here.
+        if (data.area?.units) setArea(data.area.units);
+      } catch {
         setError("Failed to load field data.");
       } finally {
         setLoading(false);
@@ -71,11 +72,8 @@ export default function EditField() {
     try {
       await updateField(fieldId, { ...form, ...area });
       navigate("/fields");
-    } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-          "Failed to update field."
-      );
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to update field."));
     } finally {
       setSaving(false);
     }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { getFertilizerHistory, deleteFertilizer } from "../fertilizer.service";
 import type { Fertilizer } from "../fertilizer.types";
@@ -8,7 +8,10 @@ export default function FertilizerHistory() {
   const [records, setRecords] = useState<Fertilizer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchHistory = async () => {
+  // useCallback so the effect below can depend on it honestly. Declaring
+  // [cropId] while calling a function rebuilt every render is the stale-closure
+  // shape the lint rule exists to catch.
+  const fetchHistory = useCallback(async () => {
     if (!cropId) return;
 
     try {
@@ -19,11 +22,11 @@ export default function FertilizerHistory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [cropId]);
 
   useEffect(() => {
     fetchHistory();
-  }, [cropId]);
+  }, [fetchHistory]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete record?")) return;

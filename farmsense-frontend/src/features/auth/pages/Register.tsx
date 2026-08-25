@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api"
+import { apiErrorMessage } from "../../../services/apiError";
 
 
 export default function Register() {
@@ -24,8 +25,8 @@ export default function Register() {
 
       alert("Account created successfully");
       navigate("/login");
-    } catch (error: any) {
-      alert(error.response?.data?.message || "Signup failed");
+    } catch (error) {
+      alert(apiErrorMessage(error, "Signup failed"));
     }
   };
 

@@ -10,6 +10,7 @@ farmer acts on must come from a tool result.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Any, Literal
 
 from langchain_core.messages import (
@@ -34,10 +35,12 @@ from tools import (
     get_irrigation_recommendation,
 )
 
+logger = logging.getLogger(__name__)
+
 MAX_TOOL_ROUNDS = 6
 
 SYSTEM_PROMPT = """You are the FarmSense assistant, helping smallholder farmers in \
-Siraha district, Nepal (Terai) grow rice and wheat.
+Gorakhpur district, Uttar Pradesh, India grow rice and wheat.
 
 HARD RULES - these are not style preferences:
 
@@ -54,9 +57,9 @@ estimate as fact.
 
 3. If an image diagnosis comes back below the confidence gate, do NOT suggest a \
 treatment anyway. Ask for a clearer photo, or point them to the local extension \
-office (Krishi Gyan Kendra, Siraha).
+office (Krishi Vigyan Kendra, Gorakhpur).
 
-4. Use the farmer's units. Land is bigha, kattha and dhur - not hectares or \
+4. Use the farmer's units. Land is bigha, katha and dhur - not hectares or \
 acres. Fertilizer is kg and 50kg sacks. If a tool gives you hectares, convert \
 using what the tool returned, do not compute your own conversion.
 
@@ -65,7 +68,7 @@ HOW TO ANSWER:
 - Short, direct, practical. A farmer reading this on a phone in a field.
 - Lead with the action, then the reason.
 - Plain language. Say "the soil is dry" not "root zone depletion exceeds RAW".
-- If the farmer writes in Nepali, answer in Nepali.
+- If the farmer writes in Hindi or Bhojpuri, answer in the same language.
 - When you genuinely do not know, say so and suggest they contact their local \
 agriculture extension officer. That is a good answer, not a failure.
 
@@ -98,11 +101,16 @@ def create_tools(crop_id: str, token: str):
         status, stresses, and the confidence in that estimate. Use this first
         for any general question about how a crop is doing. This is the single
         source of truth - all other tools agree with it."""
+        logger.info(f"Tool: get_crop_state for crop {crop_id}")
         try:
-            return get_crop_state_summary(crop_id, token)
+            result = get_crop_state_summary(crop_id, token)
+            logger.debug(f"get_crop_state result length: {len(result)}")
+            return result
         except BackendError as e:
+            logger.warning(f"get_crop_state backend error: {e}")
             return f"Could not retrieve crop state: {e}"
         except Exception as e:
+            logger.exception("get_crop_state unexpected error")
             return f"Unexpected error: {e}"
 
     @tool
@@ -111,24 +119,35 @@ def create_tools(crop_id: str, token: str):
         to apply. Combines the FAO-56 water balance with the rainfall forecast.
         Use for any question about watering, irrigation timing, or pump running time.
         Never estimate water amounts yourself - always call this."""
+        logger.info(f"Tool: get_irrigation for crop {crop_id}")
         try:
-            return get_irrigation_recommendation(crop_id, token)
+            result = get_irrigation_recommendation(crop_id, token)
+            logger.debug(f"get_irrigation result length: {len(result)}")
+            return result
         except BackendError as e:
+            logger.warning(f"get_irrigation backend error: {e}")
             return f"Could not retrieve irrigation recommendation: {e}"
         except Exception as e:
+            logger.exception("get_irrigation unexpected error")
             return f"Unexpected error: {e}"
 
     @tool
     def get_fertilizer() -> str:
-        """Get the fertilizer plan: which products, how many kg, and when, computed
-        from official NARC rate tables and the field's measured area. Use for any
-        question about urea, DAP, potash, NPK, or top-dressing. NEVER state a
-        fertilizer quantity from your own knowledge - always call this tool."""
+        """Get the fertilizer plan: which products, how many kg, and when,
+        computed from official ICAR / UP Dept of Agriculture rate tables and the
+        field's measured area. Use for any question about urea, DAP, potash,
+        NPK, or top-dressing. NEVER state a fertilizer quantity from your own
+        knowledge - always call this tool."""
+        logger.info(f"Tool: get_fertilizer for crop {crop_id}")
         try:
-            return get_fertilizer_recommendation(crop_id, token)
+            result = get_fertilizer_recommendation(crop_id, token)
+            logger.debug(f"get_fertilizer result length: {len(result)}")
+            return result
         except BackendError as e:
+            logger.warning(f"get_fertilizer backend error: {e}")
             return f"Could not retrieve fertilizer recommendation: {e}"
         except Exception as e:
+            logger.exception("get_fertilizer unexpected error")
             return f"Unexpected error: {e}"
 
     return [get_crop_state, get_irrigation, get_fertilizer]
@@ -328,8 +347,11 @@ def chat(
     }
 
     try:
+        logger.info(f"Chat request for crop {crop_id}: {message[:100]}...")
         final_state = graph.invoke(initial_state)
+        logger.info(f"Chat completed, tools used: {final_state.get('tools_used', [])}")
     except Exception as e:
+        logger.exception("Chat error for crop %s", crop_id)
         return {
             "reply": f"An error occurred: {e}",
             "tools_used": [],

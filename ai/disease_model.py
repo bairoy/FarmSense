@@ -16,9 +16,8 @@ import threading
 import urllib.request
 
 import torch
-import torchvision.transforms as transforms
 from PIL import Image
-from torchvision import models
+from torchvision import models, transforms
 
 from config import CLASSES, MODEL_PATH, MODEL_URL
 

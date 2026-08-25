@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../../../services/api"
 import { useAuthStore } from "../../../store/authStore"
+import { apiErrorMessage } from "../../../services/apiError";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,8 +22,8 @@ export default function Login() {
       login(user, accessToken, refreshToken);
 
       navigate("/");
-    } catch (error: any) {
-      alert(error.response?.data?.message || "Login failed");
+    } catch (error) {
+      alert(apiErrorMessage(error, "Login failed"));
     }
   };
 

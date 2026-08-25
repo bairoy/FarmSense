@@ -7,15 +7,14 @@ free compute for whoever finds it.
 """
 
 import base64
-from typing import Optional
 
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
+import langgraph_agent
 from config import AI_SERVICE_TOKEN, CONFIDENCE_GATE, MAX_UPLOAD_BYTES
 from disease_model import predict_disease
 from image_utils import compress_for_storage, load_image
-import langgraph_agent
 
 app = FastAPI(title="FarmSense AI", version="0.2.0")
 
@@ -77,8 +76,10 @@ async def detect_disease(file: UploadFile = File(...)) -> dict:
 
     try:
         image = load_image(raw)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Could not decode image")
+    except Exception as exc:  # noqa: BLE001 - PIL raises many types for a bad file
+        raise HTTPException(
+            status_code=400, detail="Could not decode image"
+        ) from exc
 
     result = predict_disease(image)
 
@@ -103,7 +104,7 @@ class ChatRequest(BaseModel):
 
     message: str
     crop_id: str
-    history: Optional[list[dict]] = None
+    history: list[dict] | None = None
 
 
 class ChatResponse(BaseModel):

@@ -3,6 +3,7 @@ import { useChatHistory } from "../useChatHistory";
 import { sendChatMessage } from "../chat.service";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
+import { apiErrorMessage } from "../../../services/apiError";
 
 type Props = {
   cropId: string;
@@ -10,22 +11,28 @@ type Props = {
   onClose: () => void;
 };
 
+const QUICK_QUESTIONS = [
+  "How is my crop doing?",
+  "Should I irrigate?",
+  "What fertilizer do I need?",
+];
+
 export function ChatPanel({ cropId, isOpen, onClose }: Props) {
   const { messages, addMessage, clearHistory, getApiHistory } =
     useChatHistory(cropId);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastToolsUsed, setLastToolsUsed] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
   const handleSend = async (message: string) => {
     setError(null);
+    setLastToolsUsed([]);
 
-    // Add user message immediately
     addMessage({
       role: "user",
       content: message,
@@ -37,16 +44,20 @@ export function ChatPanel({ cropId, isOpen, onClose }: Props) {
     try {
       const response = await sendChatMessage(message, cropId, getApiHistory());
 
+      setLastToolsUsed(response.tools_used || []);
+
       addMessage({
         role: "assistant",
         content: response.reply,
         timestamp: Date.now(),
       });
-    } catch (err: any) {
-      const errorMsg =
-        err.response?.data?.error ||
-        err.message ||
-        "Failed to send message. Please try again.";
+    } catch (err) {
+      const errorMsg = apiErrorMessage(
+        err,
+        err instanceof Error && err.message
+          ? err.message
+          : "Failed to send message. Please try again."
+      );
       setError(errorMsg);
     } finally {
       setLoading(false);
@@ -101,12 +112,26 @@ export function ChatPanel({ cropId, isOpen, onClose }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
-          <div className="text-center text-gray-500 text-sm py-8">
-            <p className="mb-2">Ask me about your crop!</p>
-            <p className="text-xs text-gray-400">
-              Try: "How is my crop doing?" or "Should I irrigate?"
+        {messages.length === 0 && !loading && (
+          <div className="text-center py-6">
+            <div className="text-4xl mb-3">🌱</div>
+            <p className="text-gray-600 font-medium mb-1">
+              Ask me about your crop!
             </p>
+            <p className="text-xs text-gray-400 mb-4">
+              I can check crop health, irrigation needs, and fertilizer plans.
+            </p>
+            <div className="space-y-2">
+              {QUICK_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => handleSend(q)}
+                  className="w-full text-left px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition border border-green-200"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((msg, idx) => (
@@ -115,23 +140,33 @@ export function ChatPanel({ cropId, isOpen, onClose }: Props) {
         {loading && (
           <div className="flex justify-start">
             <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                />
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.1s" }}
+                  />
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0.2s" }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500">Checking your crop...</span>
               </div>
             </div>
           </div>
         )}
         {error && (
-          <div className="text-center text-red-500 text-sm py-2 px-4 bg-red-50 rounded-lg">
+          <div className="text-center text-red-600 text-sm py-2 px-4 bg-red-50 rounded-lg border border-red-200">
             {error}
+          </div>
+        )}
+        {lastToolsUsed.length > 0 && messages.length > 0 && !loading && (
+          <div className="text-center">
+            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
+              Used: {lastToolsUsed.map(t => t.replace(/_/g, " ")).join(", ")}
+            </span>
           </div>
         )}
         <div ref={messagesEndRef} />

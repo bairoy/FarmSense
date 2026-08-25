@@ -68,7 +68,7 @@ export default function FieldDetails() {
               <p>
                 <strong>Area:</strong>{" "}
                 {field.area
-                  ? `${field.area.nepali_label} (${field.area.hectares} ha)`
+                  ? `${field.area.area_label} (${field.area.hectares} ha)`
                   : "not recorded"}
               </p>
               <p>

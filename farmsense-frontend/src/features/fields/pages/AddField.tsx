@@ -1,26 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../../services/api.ts";
-import { AreaInput, areaToSqm, type AreaValue } from "../components/AreaInput.tsx";
+import { AreaInput, type AreaValue } from "../components/AreaInput.tsx";
+import { useRegion, areaToSqm } from "../../../services/region.ts";
+import { apiErrorMessage } from "../../../services/apiError";
 
 export default function AddField() {
   const navigate = useNavigate();
+  const { region } = useRegion();
 
   const [form, setForm] = useState({
     location_name: "",
-    latitude: 26.65,
-    longitude: 86.2,
+    latitude: 0,
+    longitude: 0,
     soil_type: "alluvial",
   });
 
-  const [area, setArea] = useState<AreaValue>({ bigha: 0, kattha: 0, dhur: 0 });
+  const [area, setArea] = useState<AreaValue>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Default the pin to the district centre once the region config arrives.
+  // Hardcoding a lat/long here is how a location change leaves fields sitting
+  // in the wrong country while everything still looks like it works.
+  useEffect(() => {
+    if (region) {
+      setForm((f) => ({
+        ...f,
+        latitude: region.coordinates.latitude,
+        longitude: region.coordinates.longitude,
+      }));
+    }
+  }, [region]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (areaToSqm(area) <= 0) {
+    if (areaToSqm(area, region?.land_units.levels ?? []) <= 0) {
       setError(
         "Enter the field area. Without it, fertilizer and water amounts cannot be calculated."
       );
@@ -31,13 +47,13 @@ export default function AddField() {
     setError(null);
 
     try {
-      // The raw bigha/kattha/dhur components are sent, not a pre-converted
+      // The raw customary-unit components are sent, not a pre-converted
       // number. The backend owns the conversion so there is exactly one place
       // it can be wrong.
       await api.post("/fields", { ...form, ...area });
       navigate("/fields");
-    } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to create field. Please try again.");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Failed to create field. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -72,7 +88,7 @@ export default function AddField() {
             {(["latitude", "longitude"] as const).map((key) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                  {key} (locked to Siraha)
+                  {key} (locked to {region?.name ?? "your district"})
                 </label>
                 <input
                   type="number"
@@ -87,7 +103,7 @@ export default function AddField() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Soil Type (locked to Siraha)
+              Soil Type (locked to {region?.name ?? "your district"})
             </label>
             <input
               className="w-full border border-gray-300 p-3 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"

@@ -16,7 +16,7 @@
 //     navigate("/login");
 //   };
 
-//   const navClass = ({ isActive }: any) =>
+//   const navClass = ({ isActive }: { isActive: boolean }) =>
 //     `px-3 py-2 rounded-md text-sm font-medium transition ${
 //       isActive
 //         ? "bg-green-600 text-white"
@@ -100,7 +100,7 @@ export default function Header() {
     navigate("/login");
   };
 
-  const navClass = ({ isActive }: any) =>
+  const navClass = ({ isActive }: { isActive: boolean }) =>
     `px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
       ? "bg-green-600 text-white shadow-sm"
       : "text-green-900 hover:bg-green-100 hover:text-green-700"

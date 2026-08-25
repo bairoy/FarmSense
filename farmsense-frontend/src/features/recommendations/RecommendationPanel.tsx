@@ -108,7 +108,7 @@ function FertilizerCard({ plan }: { plan: FertilizerPlan }) {
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <h3 className="font-semibold text-lg text-green-900">🌱 Fertilizer</h3>
         <span className="text-xs text-gray-500">
-          for {plan.area.nepali_label} ({plan.area.hectares} ha)
+          for {plan.area.area_label} ({plan.area.hectares} ha)
         </span>
       </div>
 
@@ -168,6 +168,12 @@ function FertilizerCard({ plan }: { plan: FertilizerPlan }) {
         <p className="mt-3 text-xs text-gray-600">
           Organic: {plan.organic_recommendation}
         </p>
+
+        {plan.micronutrient_recommendation && (
+          <p className="mt-2 text-xs text-gray-600">
+            Micronutrients: {plan.micronutrient_recommendation}
+          </p>
+        )}
       </details>
 
       {plan.adjustments.length > 0 && (

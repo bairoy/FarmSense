@@ -32,9 +32,10 @@ export type FertilizerSplit = {
 
 export type FertilizerPlan = {
   crop: string;
-  area: { nepali_label: string; hectares: number; area_sqm: number };
+  area: { area_label: string; hectares: number; area_sqm: number };
   season_total_kg: { N: number; P2O5: number; K2O: number };
   organic_recommendation: string;
+  micronutrient_recommendation: string | null;
   splits: FertilizerSplit[];
   current_action: FertilizerSplit | null;
   adjustments: { applied: string; reason: string; multiplier: number }[];
@@ -47,7 +48,7 @@ export type FusedCropState = {
   field: {
     id: string;
     name: string;
-    area: { nepali_label: string; hectares: number } | null;
+    area: { area_label: string; hectares: number } | null;
     has_boundary: boolean;
   };
   day_number: number;
