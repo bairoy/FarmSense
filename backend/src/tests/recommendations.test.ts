@@ -1,9 +1,15 @@
+// Must precede every other import: the satellite services below reach
+// config/env.ts, which throws when Supabase variables are absent.
+import "./support/testEnv.ts";
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import { buildFertilizerPlan } from "../modules/recommendations/fertilizer.recommender.ts";
 import { getTreatment, getConfidenceGate } from "../modules/rules/treatments.loader.ts";
 import { assessConfidence } from "../modules/rules/confidence.ts";
-import { SQM_PER_BIGHA } from "../utils/landUnits.ts";
+import { sqmPerUnit } from "../utils/landUnits.ts";
+
+const SQM_PER_BIGHA = sqmPerUnit("bigha");
 import { detectTransplant } from "../modules/satellite/sentinel1.service.ts";
 import { expectedNdvi } from "../modules/satellite/sentinel2.service.ts";
 
@@ -40,10 +46,10 @@ test("season total matches the published per-hectare rate", () => {
     diseaseDetected: false,
   });
 
-  // NARC recommended dose for Terai rice: 100:30:30 kg/ha.
-  assert.ok(Math.abs(plan.season_total_kg.N - 100) < 0.5);
-  assert.ok(Math.abs(plan.season_total_kg.P2O5 - 30) < 0.5);
-  assert.ok(Math.abs(plan.season_total_kg.K2O - 30) < 0.5);
+  // UP Dept of Agriculture recommended dose for irrigated kharif rice: 120:60:60 kg/ha.
+  assert.ok(Math.abs(plan.season_total_kg.N - 120) < 0.5);
+  assert.ok(Math.abs(plan.season_total_kg.P2O5 - 60) < 0.5);
+  assert.ok(Math.abs(plan.season_total_kg.K2O - 60) < 0.5);
 });
 
 test("DAP nitrogen is subtracted from the urea requirement", () => {
@@ -59,13 +65,13 @@ test("DAP nitrogen is subtracted from the urea requirement", () => {
   const dap = basal.products.find((p) => p.product === "dap")!;
   const urea = basal.products.find((p) => p.product === "urea");
 
-  // Wheat basal: 50 kg N and 50 kg P2O5 per hectare.
-  // DAP supplies P2O5 at 46%, so ~108.7 kg DAP, which carries ~19.6 kg N.
-  // Urea should therefore cover ~30.4 kg N, i.e. ~66 kg urea - NOT the ~109 kg
+  // Wheat basal at the UP irrigated rate (150:60:40): 75 kg N and 60 kg P2O5/ha.
+  // DAP supplies P2O5 at 46%, so ~130.4 kg DAP, which carries ~23.5 kg N.
+  // Urea should therefore cover ~51.5 kg N, i.e. ~112 kg urea - NOT the ~163 kg
   // you would get by ignoring DAP's nitrogen.
-  assert.ok(Math.abs(dap.kg - 108.7) < 1);
-  assert.ok(urea!.kg < 80, `urea ${urea!.kg} kg suggests DAP nitrogen was not credited`);
-  assert.ok(urea!.kg > 55);
+  assert.ok(Math.abs(dap.kg - 130.4) < 1, `dap ${dap.kg} kg`);
+  assert.ok(urea!.kg < 125, `urea ${urea!.kg} kg suggests DAP nitrogen was not credited`);
+  assert.ok(urea!.kg > 100);
 });
 
 test("water stress reduces nitrogen but not phosphorus or potassium", () => {

@@ -44,32 +44,32 @@ test("extraterrestrial radiation matches FAO-56 Example 8", () => {
   assert.ok(Math.abs(ra - 32.2) < 0.5, `expected ~32.2, got ${ra}`);
 });
 
-test("ETo for a hot dry Terai day sits in the expected range", () => {
-  // Siraha in late April: hot, moderate humidity, decent radiation.
+test("ETo for a hot dry pre-monsoon day sits in the expected range", () => {
+  // Gorakhpur in late April: hot, moderate humidity, decent radiation.
   const eto = calculateEto({
     tempMaxC: 38,
     tempMinC: 24,
     humidityPct: 45,
     windSpeed2m: 2.0,
     solarRadiationMj: 22,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 115,
   });
 
-  // Published ETo for the Terai pre-monsoon runs roughly 5-8 mm/day.
+  // Published ETo for the eastern plains pre-monsoon runs roughly 5-8 mm/day.
   assert.ok(eto > 4.5 && eto < 9, `expected 4.5-9 mm/day, got ${eto}`);
 });
 
 test("ETo for a cool humid winter day is much lower", () => {
-  // Siraha in January - the wheat season.
+  // Gorakhpur in January - the rabi wheat season.
   const eto = calculateEto({
     tempMaxC: 22,
     tempMinC: 8,
     humidityPct: 80,
     windSpeed2m: 1.2,
     solarRadiationMj: 13,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 15,
   });
@@ -83,7 +83,7 @@ test("higher wind raises ETo at fixed temperature and radiation", () => {
     tempMinC: 20,
     humidityPct: 50,
     solarRadiationMj: 20,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 100,
   };
@@ -103,7 +103,7 @@ test("higher humidity lowers ETo", () => {
     tempMinC: 20,
     windSpeed2m: 2,
     solarRadiationMj: 20,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 100,
   };
@@ -123,7 +123,7 @@ test("ETo is never negative", () => {
     humidityPct: 95,
     windSpeed2m: 0.5,
     solarRadiationMj: 1,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 1,
   });
@@ -138,12 +138,12 @@ test("Hargreaves fallback lands in the same ballpark as Penman-Monteith", () => 
     humidityPct: 55,
     windSpeed2m: 2,
     solarRadiationMj: 21,
-    latitude: 26.65,
+    latitude: 26.76,
     elevationM: 100,
     dayOfYear: 150,
   });
 
-  const hs = calculateEtoHargreaves(35, 22, 26.65, 150);
+  const hs = calculateEtoHargreaves(35, 22, 26.76, 150);
 
   // Hargreaves is the degraded path used when radiation/wind are missing. It
   // should be close enough to be useful but is expected to differ - which is

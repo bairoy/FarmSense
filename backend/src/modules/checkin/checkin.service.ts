@@ -1,10 +1,13 @@
 import { differenceInDays } from "date-fns";
-// Service-role client, deliberately. `farmer_checkins` has RLS enabled, and
-// its policy is written against `auth.uid()` - which is null on the anon
-// client, so every insert is denied. Ownership here is enforced in code by
-// joining through `crop_instances -> fields.user_id`, exactly as every other
-// module does. Keeping RLS on means a leaked anon key still cannot read a
-// farmer's check-ins directly; it is defence in depth, not the primary check.
+// Service-role client, deliberately - not `req.db`.
+//
+// `farmer_checkins` rows are asked by the system, not written by the farmer:
+// the scheduler decides a question is due and inserts it, and there is no user
+// session behind that. The table's policy also grants read but no `with check`,
+// so a user-scoped insert would be denied outright.
+//
+// Ownership is still enforced in code, by joining through
+// `crop_instances -> fields.user_id` on every user-facing read below.
 import { supabaseAdmin as supabase } from "../../config/supabase.ts";
 import { loadRegionConfig } from "../rules/rules.loader.ts";
 import { env } from "../../config/env.ts";
@@ -30,8 +33,8 @@ import { env } from "../../config/env.ts";
 export type CheckinQuestion = {
   key: string;
   question: string;
-  question_ne: string;
-  options: { value: string; label: string; label_ne: string }[];
+  question_hi: string;
+  options: { value: string; label: string; label_hi: string }[];
   /** Which model assumption this answer tests. */
   corrects: string;
   priority: number;
@@ -60,11 +63,11 @@ export const selectQuestion = (
     questions.push({
       key: "field_flooded",
       question: "Is there standing water in your field today?",
-      question_ne: "आज तपाईंको खेतमा पानी जमेको छ?",
+      question_hi: "क्या आज आपके खेत में पानी भरा हुआ है?",
       options: [
-        { value: "yes_deep", label: "Yes, ankle deep or more", label_ne: "छ, गोलिगाँठोसम्म वा बढी" },
-        { value: "yes_shallow", label: "Yes, but very shallow", label_ne: "छ, तर धेरै कम" },
-        { value: "no", label: "No, the field is drained", label_ne: "छैन, खेत सुकेको छ" },
+        { value: "yes_deep", label: "Yes, ankle deep or more", label_hi: "हाँ, टखने तक या उससे अधिक" },
+        { value: "yes_shallow", label: "Yes, but very shallow", label_hi: "हाँ, लेकिन बहुत कम" },
+        { value: "no", label: "No, the field is drained", label_hi: "नहीं, खेत सूखा है" },
       ],
       corrects: "paddy ponded depth and percolation rate",
       priority: 100,
@@ -73,11 +76,11 @@ export const selectQuestion = (
     questions.push({
       key: "soil_dry",
       question: "Is the soil surface cracked or dusty?",
-      question_ne: "माटोको सतह फुटेको वा धुलो छ?",
+      question_hi: "क्या मिट्टी की सतह फट गई है या धूल जैसी है?",
       options: [
-        { value: "cracked", label: "Yes, visibly cracked", label_ne: "छ, स्पष्ट फुटेको" },
-        { value: "dry", label: "Dry but not cracked", label_ne: "सुक्खा तर फुटेको छैन" },
-        { value: "moist", label: "Still moist", label_ne: "अझै ओसिलो" },
+        { value: "cracked", label: "Yes, visibly cracked", label_hi: "हाँ, साफ़ दरारें हैं" },
+        { value: "dry", label: "Dry but not cracked", label_hi: "सूखी है, पर दरार नहीं" },
+        { value: "moist", label: "Still moist", label_hi: "अभी भी नम है" },
       ],
       corrects: "root-zone depletion estimate",
       priority: 90,
@@ -89,11 +92,11 @@ export const selectQuestion = (
   questions.push({
     key: "crop_appearance",
     question: "Does the crop look stressed - yellowing, wilting, or stunted?",
-    question_ne: "बालीमा तनाव देखिन्छ - पहेंलो, ओइलाएको, वा नबढेको?",
+    question_hi: "क्या फसल में तनाव दिख रहा है - पीलापन, मुरझाना, या बढ़वार रुकना?",
     options: [
-      { value: "healthy", label: "Looks healthy", label_ne: "स्वस्थ देखिन्छ" },
-      { value: "patchy", label: "Some patches look bad", label_ne: "केही ठाउँमा नराम्रो" },
-      { value: "widespread", label: "Most of the field looks bad", label_ne: "अधिकांश खेत नराम्रो" },
+      { value: "healthy", label: "Looks healthy", label_hi: "स्वस्थ दिख रही है" },
+      { value: "patchy", label: "Some patches look bad", label_hi: "कुछ हिस्सों में खराब है" },
+      { value: "widespread", label: "Most of the field looks bad", label_hi: "अधिकांश खेत खराब है" },
     ],
     corrects: "overall health score against direct observation",
     priority: 80,
@@ -103,10 +106,10 @@ export const selectQuestion = (
     questions.push({
       key: "flowering_confirm",
       question: "Has the crop started flowering (panicles emerging)?",
-      question_ne: "बालीमा बाला निस्कन थालेको छ?",
+      question_hi: "क्या फसल में बालियाँ निकलनी शुरू हो गई हैं?",
       options: [
-        { value: "yes", label: "Yes", label_ne: "छ" },
-        { value: "not_yet", label: "Not yet", label_ne: "अझै छैन" },
+        { value: "yes", label: "Yes", label_hi: "हाँ" },
+        { value: "not_yet", label: "Not yet", label_hi: "अभी नहीं" },
       ],
       // GDD phase boundaries are calibrated averages. A direct confirmation
       // re-anchors the whole phenology model, which every later phase

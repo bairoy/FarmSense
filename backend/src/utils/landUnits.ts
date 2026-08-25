@@ -1,70 +1,133 @@
 /**
- * Nepali Terai land measurement.
+ * Customary land measurement, driven by the active region config.
  *
- * Farmers in Siraha do not think in hectares. They think in Bigha-Kattha-Dhur,
- * the customary system used across the Terai. Asking a farmer for "4.5 acres"
- * gets a guess; asking for "2 bigha 5 kattha" gets the number written on their
- * land certificate.
+ * Farmers do not think in hectares. In Gorakhpur they think in Bigha-Katha-Dhur,
+ * the revenue units written on their khatauni. Asking for "1.5 acres" gets a
+ * guess; asking for "2 bigha 5 katha" gets the number off the document.
+ *
+ * Nothing about a specific place is hardcoded here. The unit ladder comes from
+ * `regions/<DEFAULT_REGION>.json` under `land_units`, because the same word
+ * means different areas in different districts - a UP pucca bigha is 2529 m2
+ * while a Nepal Terai bigha is 6772 m2, and silently applying one where the
+ * other is meant is a 2.7x error in every fertilizer dose the system produces.
  *
  * Internally everything is square metres. Conversion happens only at the edges
  * (input parsing and display formatting) so no calculation ever depends on
  * which unit the farmer happened to use.
  *
- * The constants are exact by definition of the system:
- *   1 Bigha  = 20 Kattha
- *   1 Kattha = 20 Dhur
- *   1 Dhur   = 16.93 m2
- *
- * Everything else follows by multiplication. Do not "simplify" these into
- * rounded values - a fertilizer dose is computed from this number, and a 2%
- * area error is a 2% chemical error across a whole field.
+ * Read straight from process.env rather than through config/env.ts: that module
+ * throws on a missing Supabase key, and the unit maths must stay importable by
+ * a unit test with no environment at all.
  */
 
-export const SQM_PER_DHUR = 16.93;
-export const SQM_PER_KATTHA = SQM_PER_DHUR * 20; // 338.60
-export const SQM_PER_BIGHA = SQM_PER_KATTHA * 20; // 6772.00
+import { loadActiveRegion } from "../modules/rules/rules.loader.ts";
+
+export type LandUnitLevel = {
+  /** Machine key, and the field name accepted by the API. */
+  key: string;
+  label: string;
+  /** Same label in the local script, for the UI to show alongside. */
+  label_local: string;
+  sqm: number;
+};
+
+export type LandUnitSystem = {
+  system: string;
+  description: string;
+  source: string;
+  levels: LandUnitLevel[];
+};
+
+const region = loadActiveRegion();
+
+if (!region.land_units?.levels?.length) {
+  throw new Error(
+    `Region "${region.region}" has no land_units.levels. Every region config must declare its own unit ladder.`
+  );
+}
+
+/**
+ * Largest unit first. The ladder is sorted here rather than trusted from the
+ * JSON so that `fromSquareMetres` can peel units off in order regardless of
+ * how a future region file happens to list them.
+ */
+export const LAND_UNITS: LandUnitSystem = {
+  ...region.land_units,
+  levels: [...region.land_units.levels].sort(
+    (a: LandUnitLevel, b: LandUnitLevel) => b.sqm - a.sqm
+  ),
+};
+
+/** The smallest unit in the ladder - what a leftover remainder is expressed in. */
+const SMALLEST = LAND_UNITS.levels[LAND_UNITS.levels.length - 1];
+
+export const UNIT_KEYS = LAND_UNITS.levels.map((l) => l.key);
 
 export const SQM_PER_HECTARE = 10_000;
 export const SQM_PER_ACRE = 4046.8564224;
 
-export type BighaKatthaDhur = {
-  bigha: number;
-  kattha: number;
-  dhur: number;
+/** Area expressed as a whole number of each customary unit. */
+export type LocalArea = Record<string, number>;
+
+export const sqmPerUnit = (key: string): number => {
+  const level = LAND_UNITS.levels.find((l) => l.key === key);
+  if (!level) {
+    throw new Error(
+      `Unknown land unit "${key}" for region "${region.region}". Valid units: ${UNIT_KEYS.join(", ")}`
+    );
+  }
+  return level.sqm;
 };
 
-/** Bigha-Kattha-Dhur -> square metres. This is the canonical direction. */
-export const toSquareMetres = (input: Partial<BighaKatthaDhur>): number => {
-  const bigha = input.bigha ?? 0;
-  const kattha = input.kattha ?? 0;
-  const dhur = input.dhur ?? 0;
+/** Customary units -> square metres. This is the canonical direction. */
+export const toSquareMetres = (input: Partial<LocalArea>): number => {
+  let total = 0;
 
-  if (bigha < 0 || kattha < 0 || dhur < 0) {
-    throw new Error("Land area components cannot be negative");
+  for (const [key, value] of Object.entries(input)) {
+    if (value === undefined || value === null) continue;
+    if (value < 0) {
+      throw new Error("Land area components cannot be negative");
+    }
+    total += value * sqmPerUnit(key);
   }
 
-  return bigha * SQM_PER_BIGHA + kattha * SQM_PER_KATTHA + dhur * SQM_PER_DHUR;
+  return total;
 };
 
 /**
- * Square metres -> Bigha-Kattha-Dhur.
+ * Square metres -> customary units.
  *
- * Dhur keeps two decimals rather than rounding to a whole unit: a Dhur is only
- * ~17 m2, and silently rounding it away would make round-tripping a value
- * lossy in a way farmers would notice on small plots.
+ * The smallest unit keeps two decimals rather than rounding to a whole unit: a
+ * dhur is only ~6 m2, and silently rounding it away would make round-tripping
+ * a value lossy in a way farmers would notice on small plots.
+ *
+ * The maths runs in whole counts of the smallest unit rather than subtracting
+ * square metres level by level. Doing it in metres accumulates binary rounding
+ * error: `2 bigha 5 katha` is 5690.891844 m2, but peeling 2 bigha off that
+ * leaves 632.3213159999996, which divides into 4.9999999999999964 katha and
+ * floors to 4 - so the farmer typed "2 bigha 5 katha" and was shown
+ * "2 bigha 4 katha 20 dhur" for the very same area.
  */
-export const fromSquareMetres = (sqm: number): BighaKatthaDhur => {
+export const fromSquareMetres = (sqm: number): LocalArea => {
   if (sqm < 0) throw new Error("Area cannot be negative");
 
-  const bigha = Math.floor(sqm / SQM_PER_BIGHA);
-  let remainder = sqm - bigha * SQM_PER_BIGHA;
+  const out: LocalArea = {};
+  let remainder = Number((sqm / SMALLEST.sqm).toFixed(2));
 
-  const kattha = Math.floor(remainder / SQM_PER_KATTHA);
-  remainder -= kattha * SQM_PER_KATTHA;
+  for (const level of LAND_UNITS.levels) {
+    if (level.key === SMALLEST.key) break;
+    // How many of the smallest unit make up one of this level (katha -> 20).
+    const perLevel = level.sqm / SMALLEST.sqm;
+    // The epsilon absorbs the last bit of drift in `perLevel` itself. A real
+    // traced boundary never lands within 1e-9 of a unit boundary by accident;
+    // only the exact-arithmetic case above does.
+    const whole = Math.floor(remainder / perLevel + 1e-9);
+    out[level.key] = whole;
+    remainder -= whole * perLevel;
+  }
 
-  const dhur = Number((remainder / SQM_PER_DHUR).toFixed(2));
-
-  return { bigha, kattha, dhur };
+  out[SMALLEST.key] = Number(remainder.toFixed(2));
+  return out;
 };
 
 export const sqmToHectares = (sqm: number): number => sqm / SQM_PER_HECTARE;
@@ -72,32 +135,36 @@ export const hectaresToSqm = (ha: number): number => ha * SQM_PER_HECTARE;
 export const sqmToAcres = (sqm: number): number => sqm / SQM_PER_ACRE;
 export const acresToSqm = (acres: number): number => acres * SQM_PER_ACRE;
 
-/** Human-readable Nepali-unit string, omitting zero components. */
-export const formatNepaliArea = (sqm: number): string => {
-  const { bigha, kattha, dhur } = fromSquareMetres(sqm);
-
+/** Human-readable customary-unit string, omitting zero components. */
+export const formatLocalArea = (sqm: number): string => {
   const parts: string[] = [];
-  if (bigha > 0) parts.push(`${bigha} bigha`);
-  if (kattha > 0) parts.push(`${kattha} kattha`);
-  if (dhur > 0) parts.push(`${dhur} dhur`);
+  const area = fromSquareMetres(sqm);
 
-  // A plot smaller than one Dhur still deserves an honest answer.
-  return parts.length > 0 ? parts.join(" ") : `${dhur} dhur`;
+  for (const level of LAND_UNITS.levels) {
+    const value = area[level.key];
+    if (value > 0) parts.push(`${value} ${level.key}`);
+  }
+
+  // A plot smaller than the smallest unit still deserves an honest answer.
+  return parts.length > 0
+    ? parts.join(" ")
+    : `${area[SMALLEST.key]} ${SMALLEST.key}`;
 };
 
 /**
  * Everything the UI and the recommendation engine need, from one number.
  *
- * Recommendations are published per hectare (NARC rate tables, FAO-56), while
- * farmers speak Bigha-Kattha-Dhur. Returning both from one place means the
+ * Recommendations are published per hectare (ICAR rate tables, FAO-56), while
+ * farmers speak in customary units. Returning both from one place means the
  * conversion is never re-implemented at a call site.
  */
 export const describeArea = (sqm: number) => ({
   area_sqm: Number(sqm.toFixed(2)),
   hectares: Number(sqmToHectares(sqm).toFixed(4)),
   acres: Number(sqmToAcres(sqm).toFixed(4)),
-  nepali: fromSquareMetres(sqm),
-  nepali_label: formatNepaliArea(sqm),
+  unit_system: LAND_UNITS.system,
+  units: fromSquareMetres(sqm),
+  area_label: formatLocalArea(sqm),
 });
 
 /**

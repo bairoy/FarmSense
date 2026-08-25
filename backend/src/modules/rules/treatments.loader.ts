@@ -14,7 +14,7 @@ const treatments = JSON.parse(
 export type Treatment = {
   disease: string;
   label: string;
-  label_ne?: string;
+  label_hi?: string;
   severity: string;
   pathogen?: string;
   chemical_treatment: Record<string, unknown> | null;
