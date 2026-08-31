@@ -22,6 +22,13 @@ import {
 import { observeWheatField, getLatestObservation } from "../satellite/satellite.service.ts";
 import { expectedNdvi } from "../satellite/sentinel2.service.ts";
 import { assessConfidence, type ConfidenceReport } from "../rules/confidence.ts";
+import {
+  applyPondedDepth,
+  applyDepletionBound,
+  applyHealthBounds,
+  phaseAnchorOffset,
+  type ObservationCorrection,
+} from "../rules/observationCorrection.ts";
 import { env } from "../../config/env.ts";
 
 /**
@@ -91,8 +98,24 @@ export type TimelineResult = {
     expected_ndvi: number | null;
     divergence: number | null;
     note: string | null;
+    /**
+     * Corrections applied from farmer check-ins, in date order.
+     *
+     * Separate from the satellite fields above because the two channels are
+     * independent: a wheat field can be corrected by both in the same season,
+     * and rice - which optical NDVI cannot see through monsoon cloud - is
+     * corrected by this channel alone.
+     */
+    farmer_observations: {
+      date: string;
+      day_number: number;
+      note: string;
+    }[];
   };
 };
+
+/** What the satellite channel alone reports; farmer observations are merged in by the caller. */
+type SatelliteCorrection = Omit<TimelineResult["correction"], "farmer_observations">;
 
 const ISO = (d: Date) => d.toISOString().split("T")[0];
 
@@ -166,7 +189,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
   const endStr = today > sowingDate ? ISO(today) : startStr;
 
   // ---- Gather inputs in parallel; none of them depend on each other -------
-  const [weatherMap, powerMap, soil, irrigationRows] = await Promise.all([
+  const [weatherMap, powerMap, soil, irrigationRows, checkinRows] = await Promise.all([
     getHistoricalWeather(latitude, longitude, startStr, endStr).catch((err) => {
       console.warn("Weather unavailable:", err.message);
       return new Map<string, WeatherDay>();
@@ -188,6 +211,18 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
       .select("action_date,amount")
       .eq("crop_instance_id", crop.id)
       .then((r) => r.data ?? []),
+    // Answered check-ins, with the correction `interpretAnswer` derived at the
+    // time. Service-role for the same reason as the irrigation query above.
+    //
+    // Only answered rows: an unanswered check-in is a question we asked and
+    // never got back, which is not evidence about the field.
+    supabaseAdmin
+      .from("farmer_checkins")
+      .select("responded_at,model_correction")
+      .eq("crop_instance_id", crop.id)
+      .not("responded_at", "is", null)
+      .order("responded_at", { ascending: true })
+      .then((r) => r.data ?? []),
   ]);
 
   // Irrigation amounts are now read from the row rather than assumed to be a
@@ -199,11 +234,34 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     irrigationByDate.set(key, (irrigationByDate.get(key) ?? 0) + (row.amount ?? 25));
   }
 
+  // Farmer observations, indexed by the day they were given. Several answers on
+  // one day are kept in order so a later one refines rather than replaces.
+  const correctionsByDate = new Map<string, ObservationCorrection[]>();
+  for (const row of checkinRows as any[]) {
+    if (!row.model_correction) continue;
+    const key = ISO(new Date(row.responded_at));
+    const list = correctionsByDate.get(key) ?? [];
+    list.push(row.model_correction as ObservationCorrection);
+    correctionsByDate.set(key, list);
+  }
+
   // ---- PREDICT -----------------------------------------------------------
   let cumulativeGDD = 0;
   let depletion = 0;
   let paddy: PaddyState = initialPaddyState();
   let penmanDays = 0;
+
+  /**
+   * Thermal-time correction carried forward from confirmed phenology.
+   *
+   * Held apart from `cumulativeGDD` rather than folded into it, so the raw
+   * thermal sum stays a pure function of the weather. Every phase boundary and
+   * Kc value downstream reads the corrected total, so a single confirmed
+   * flowering date re-anchors the whole remaining season.
+   */
+  let gddOffset = 0;
+
+  const farmerObservations: TimelineResult["correction"]["farmer_observations"] = [];
 
   const paddyConfig: PaddyConfig = {
     bundHeightMm: cropConfig.paddy?.bund_height_mm ?? 150,
@@ -231,11 +289,35 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     const tMean = (tempMax + tempMin) / 2;
     cumulativeGDD += Math.max(0, tMean - cropConfig.base_temperature_c);
 
+    const todaysCorrections = correctionsByDate.get(dateStr) ?? [];
+
+    // Phenology anchoring is resolved before the phase lookup, so a
+    // confirmation the farmer gave today takes effect today rather than
+    // tomorrow. The other correction types act on state the water model has
+    // not computed yet, so they are applied further down.
+    for (const correction of todaysCorrections) {
+      const anchor = phaseAnchorOffset(
+        cumulativeGDD + gddOffset,
+        cropConfig.phases,
+        correction
+      );
+      if (anchor.moved > 0) {
+        gddOffset += anchor.value;
+        farmerObservations.push({
+          date: dateStr,
+          day_number: i + 1,
+          note: anchor.note!,
+        });
+      }
+    }
+
+    const effectiveGdd = Math.max(0, cumulativeGDD + gddOffset);
+
     let phase = "maturity";
     let kc = cropConfig.phases[cropConfig.phases.length - 1].kc;
 
     for (const p of cropConfig.phases) {
-      if (cumulativeGDD >= p.gdd_start && cumulativeGDD < p.gdd_end) {
+      if (effectiveGdd >= p.gdd_start && effectiveGdd < p.gdd_end) {
         phase = p.name;
         kc = p.kc;
         break;
@@ -252,7 +334,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
       date: dateStr,
       day_number: i + 1,
       phase,
-      cumulative_gdd: Math.round(cumulativeGDD),
+      cumulative_gdd: Math.round(effectiveGdd),
       kc,
       eto,
       etc,
@@ -288,7 +370,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     } else {
       // --- Wheat: FAO-56 root-zone depletion ---
       const rootDepth = currentRootDepth(
-        cumulativeGDD,
+        effectiveGdd,
         cropConfig.gdd_to_full_root ?? 900,
         cropConfig.root_depth_min_m ?? 0.2,
         cropConfig.root_depth_m
@@ -322,6 +404,54 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
       }
     }
 
+    // --- CORRECT: water state, from what the farmer reported today ---------
+    //
+    // Applied after the water model has stepped, so the correction lands on
+    // today's simulated value. Because `paddy` and `depletion` are carried
+    // across iterations, a correction here propagates through the rest of the
+    // season rather than being a one-day cosmetic patch - which is the whole
+    // point of correcting a twin rather than annotating a chart.
+    for (const correction of todaysCorrections) {
+      if (isPaddy) {
+        const ponded = applyPondedDepth(paddy.pondedDepthMm, correction);
+        if (ponded.moved > 0) {
+          paddy = {
+            ...paddy,
+            pondedDepthMm: ponded.value,
+            flooded: ponded.value > 0,
+            // A field the farmer reports as wet has not been accumulating dry
+            // days, however long the simulation thought it had been drained.
+            dryDays: ponded.value > 0 ? 0 : paddy.dryDays,
+          };
+          day.ponded_depth_mm = paddy.pondedDepthMm;
+          day.flooded = paddy.flooded;
+          day.dry_days = paddy.dryDays;
+          farmerObservations.push({ date: dateStr, day_number: i + 1, note: ponded.note! });
+        }
+      } else if (capacity) {
+        const bounded = applyDepletionBound(depletion, capacity.TAW, correction);
+        if (bounded.moved > 0) {
+          depletion = bounded.value;
+          day.soil_depletion = Number(depletion.toFixed(2));
+
+          // Stress follows from the corrected depletion, not the simulated one.
+          waterStressSeverity =
+            depletion > capacity.RAW
+              ? Math.min(
+                  1,
+                  (depletion - capacity.RAW) / Math.max(1, capacity.TAW - capacity.RAW)
+                )
+              : 0;
+          waterStressReason =
+            waterStressSeverity > 0
+              ? `Root-zone depletion is ${depletion.toFixed(0)} mm against ${capacity.RAW.toFixed(0)} mm of readily available water, after correction from a field observation.`
+              : null;
+
+          farmerObservations.push({ date: dateStr, day_number: i + 1, note: bounded.note! });
+        }
+      }
+    }
+
     const evaluation = evaluateAgronomicState({
       crop: crop.crop_type,
       phase,
@@ -336,11 +466,48 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     });
 
     Object.assign(day, evaluation);
+
+    // --- CORRECT: health, from what the farmer can see --------------------
+    //
+    // Last, because it bounds the *output* of the agronomic rules rather than
+    // an input to them. The simulation infers health from water and heat; the
+    // farmer sees nitrogen deficiency, pests and waterlogging that no weather
+    // model can predict.
+    for (const correction of todaysCorrections) {
+      const health = applyHealthBounds(day.health_score, correction);
+      if (health.moved > 0) {
+        day.health_score = Math.round(health.value);
+        day.status = statusFromScore(day.health_score);
+        farmerObservations.push({ date: dateStr, day_number: i + 1, note: health.note! });
+      }
+    }
+
     timeline.push(day);
   }
 
   // ---- OBSERVE + CORRECT -------------------------------------------------
-  const correction = await applyCorrection(crop, cropConfig, timeline);
+  const satellite = await applyCorrection(crop, cropConfig, timeline);
+
+  // Two independent channels. Rice reaches this point with `satellite.applied`
+  // false by design - optical NDVI cannot see through monsoon cloud - so the
+  // farmer channel is the only correction a paddy crop ever gets.
+  const correction: TimelineResult["correction"] = {
+    ...satellite,
+    applied: satellite.applied || farmerObservations.length > 0,
+    source:
+      satellite.applied && farmerObservations.length > 0
+        ? "sentinel2+farmer"
+        : farmerObservations.length > 0
+          ? "farmer"
+          : satellite.source,
+    note:
+      farmerObservations.length > 0
+        ? [satellite.applied ? satellite.note : null, farmerObservations.at(-1)!.note]
+            .filter(Boolean)
+            .join(" ")
+        : satellite.note,
+    farmer_observations: farmerObservations,
+  };
 
   // ---- Confidence --------------------------------------------------------
   const latest = await getLatestObservation(field.id ?? crop.field_id).catch(() => null);
@@ -385,7 +552,7 @@ const applyCorrection = async (
   crop: any,
   cropConfig: any,
   timeline: TimelineDay[]
-): Promise<TimelineResult["correction"]> => {
+): Promise<SatelliteCorrection> => {
   const none = {
     applied: false,
     source: null,
@@ -398,10 +565,14 @@ const applyCorrection = async (
   // Optical correction is only meaningful for the dry-season crop. During the
   // rice monsoon, Sentinel-1 handles grounding (transplant date detection), so
   // there is nothing to gain from burning a request on a cloud-covered scene.
+  //
+  // This is not the end of correction for rice: farmer check-ins are applied
+  // inside the simulation loop and are the paddy crop's primary - and during a
+  // long overcast spell, only - correction channel.
   if (cropConfig.satellite_channel !== "sentinel2") {
     return {
       ...none,
-      note: "This crop is grounded with Sentinel-1 radar rather than optical NDVI; monsoon cloud makes optical correction unreliable.",
+      note: "This crop is grounded with Sentinel-1 radar and farmer observation rather than optical NDVI; monsoon cloud makes optical correction unreliable.",
     };
   }
 
