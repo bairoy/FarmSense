@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>FarmSense - Add New Field</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#414940",
+            "on-tertiary": "#ffffff",
+            "secondary-container": "#bdebbd",
+            "on-tertiary-fixed-variant": "#004b73",
+            "surface-variant": "#d9e6d9",
+            "secondary-fixed": "#c0eec0",
+            "inverse-on-surface": "#e7f4e7",
+            "on-tertiary-container": "#bbddff",
+            "surface-dim": "#d0ddd1",
+            "primary-fixed-dim": "#96d69a",
+            "on-tertiary-fixed": "#001d31",
+            "primary": "#145224",
+            "inverse-surface": "#28332a",
+            "background": "#f0fdf0",
+            "secondary": "#3f6743",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#274f2d",
+            "outline-variant": "#c0c9bd",
+            "error": "#ba1a1a",
+            "secondary-fixed-dim": "#a5d2a5",
+            "tertiary-fixed": "#cce5ff",
+            "inverse-primary": "#96d69a",
+            "surface-container": "#e4f1e4",
+            "surface": "#f0fdf0",
+            "outline": "#71796f",
+            "primary-fixed": "#b1f2b4",
+            "primary-container": "#2f6b3a",
+            "on-primary-fixed": "#002108",
+            "surface-container-high": "#dfecdf",
+            "on-background": "#131e16",
+            "on-error": "#ffffff",
+            "surface-container-highest": "#d9e6d9",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f0fdf0",
+            "surface-tint": "#2e6a39",
+            "on-secondary": "#ffffff",
+            "tertiary": "#004b74",
+            "tertiary-container": "#006499",
+            "on-secondary-container": "#436c47",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#a8e9ac",
+            "tertiary-fixed-dim": "#93ccff",
+            "on-primary-fixed-variant": "#135224",
+            "on-secondary-fixed": "#002108",
+            "surface-container-low": "#eaf7ea",
+            "on-primary": "#ffffff",
+            "on-surface": "#131e16"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.75rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "space-xs": "0.375rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "headline-xl-mobile": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "title-sm": ["Inter"],
+            "body-md-bold": ["Inter"],
+            "headline-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "metric-display": ["Inter"]
+          },
+          "fontSize": {
+            "headline-xl-mobile": ["30px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-lg": ["17px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "title-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-md-bold": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-lg": ["26px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "label-md": ["14px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "500" }],
+            "metric-display": ["34px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-fill {
+      font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+    }
+    body {
+      background-color: #F7F9F6;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-[#F7F9F6] text-on-surface antialiased min-h-screen pb-28 selection:bg-secondary-container">
+<!-- TOP APP BAR -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm w-full">
+<div class="flex justify-between items-center w-full px-margin h-16 max-w-md mx-auto">
+<div class="flex items-center space-x-2">
+<button aria-label="Go back" class="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-2 rounded-full text-on-surface hover:bg-surface-container-low active:scale-95 transition-transform duration-150" type="button">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<span class="font-headline-md text-headline-md text-primary font-bold tracking-tight">Add New Field</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full bg-[#DCFCE7] text-[#16A34A] font-label-sm text-label-sm border border-[#16A34A]/20">
+<span class="material-symbols-outlined text-[14px] mr-1" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+          GPS Online
+        </span>
+</div>
+</div>
+</header>
+<!-- MAIN SCROLLABLE FORM CANVAS -->
+<main class="max-w-md mx-auto px-margin pt-4 space-y-space-md">
+<!-- PROGRESS STEPS INDICATOR -->
+<div class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-3 shadow-sm flex items-center justify-between">
+<div class="flex items-center space-x-2">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-md text-label-md">1</div>
+<span class="font-label-md text-label-md text-on-surface">Boundary &amp; Soil Specs</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">Step 1 of 2</span>
+</div>
+<!-- 1. INTERACTIVE GPS MAP CARD -->
+<section class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl overflow-hidden shadow-sm">
+<!-- Card Header -->
+<div class="p-4 pb-3 flex items-center justify-between border-b border-[#E2E8E2]/60">
+<div>
+<h2 class="font-headline-md text-[18px] text-on-surface leading-tight font-bold">Field Boundary &amp; Pin</h2>
+<p class="font-label-sm text-label-sm text-outline">Gorakhpur East Region, UP</p>
+</div>
+<div class="flex items-center space-x-1 bg-surface-container px-2 py-1 rounded-lg border border-outline-variant/60">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">satellite_alt</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">Satellite</span>
+</div>
+</div>
+<!-- Map Viewport Container -->
+<div class="relative w-full h-56 bg-surface-dim overflow-hidden select-none">
+<img class="w-full h-full object-cover" data-alt="An ultra-crisp high-resolution satellite aerial photograph of lush agricultural farmland in Gorakhpur India showing geometric green paddy parcels, irrigation canals, and rural earthen plot boundary paths under clear daylight with high visual fidelity." data-location="Gorakhpur" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlKL6m-qgN0OXSO5eYhHQNazyXf4JYDsFw2XzHIp5vlHfP-9AKlQEtIZn7EndNvdR4x6sHTVi0rC_bApKgR4Yntv4YDAZBD0-p_P-s12FGeMlvJiDPoxGF5ZZ8zSaBkLFxFT9EPXOtlQDjdx21NJt8fY7NxVNu-0gTZcYQ7kzTLO7y4kUsa1UjFoj7nR9AeP7a1WOBR-8P5GfNaLkp05bepwQ0E3N2yR__cXza5nmHvZtpSMrZ5h5a"/>
+<!-- Tactical Map Grid & Boundary Polygon Overlay -->
+<div class="absolute inset-0 bg-primary/10 pointer-events-none">
+<svg class="w-full h-full" fill="none" viewbox="0 0 400 224" xmlns="http://www.w3.org/2000/svg">
+<polygon fill="rgba(47, 107, 58, 0.28)" points="90,40 310,30 335,170 115,190" stroke="#2F6B3A" stroke-dasharray="4 2" stroke-width="2.5"></polygon>
+<circle cx="90" cy="40" fill="#FFFFFF" r="5" stroke="#2F6B3A" stroke-width="2.5"></circle>
+<circle cx="310" cy="30" fill="#FFFFFF" r="5" stroke="#2F6B3A" stroke-width="2.5"></circle>
+<circle cx="335" cy="170" fill="#FFFFFF" r="5" stroke="#2F6B3A" stroke-width="2.5"></circle>
+<circle cx="115" cy="190" fill="#FFFFFF" r="5" stroke="#2F6B3A" stroke-width="2.5"></circle>
+</svg>
+</div>
+<!-- Draggable Map Pin Target in Center -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full flex flex-col items-center pointer-events-none drop-shadow-lg">
+<div class="bg-primary text-on-primary text-[11px] font-bold px-2 py-0.5 rounded-full mb-0.5 tracking-tight border border-white">
+            Target Centroid
+          </div>
+<span class="material-symbols-outlined text-[36px] text-error -mb-1.5" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<div class="w-2.5 h-1 bg-black/40 rounded-full blur-[1px]"></div>
+</div>
+<!-- Coordinates HUD Pill -->
+<div class="absolute top-2.5 left-2.5 bg-surface-container-lowest/95 backdrop-blur-sm border border-[#E2E8E2] px-2.5 py-1.5 rounded-lg shadow-sm">
+<div class="flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">my_location</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold tracking-wider font-mono">26.7588° N, 83.3812° E</span>
+</div>
+</div>
+<!-- Accuracy Indicator Badge -->
+<div class="absolute bottom-2.5 right-2.5 bg-surface-container-lowest/95 backdrop-blur-sm border border-[#E2E8E2] px-2.5 py-1 rounded-md shadow-sm flex items-center space-x-1">
+<span class="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+<span class="font-label-sm text-[11px] text-on-surface-variant font-medium">GPS Accuracy: ±3m</span>
+</div>
+</div>
+<!-- Action Strip for Location Capture -->
+<div class="p-3 bg-surface-container-low/50 flex flex-col sm:flex-row gap-2 border-t border-[#E2E8E2]">
+<button class="min-h-[48px] flex-1 bg-primary text-on-primary rounded-xl px-3 flex items-center justify-center space-x-2 font-body-md-bold text-label-md active:scale-95 transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">tamper_detection_off</span>
+<span>Use Current GPS Location</span>
+</button>
+<button class="min-h-[48px] px-3 bg-surface-container-lowest border border-outline-variant text-on-surface rounded-xl flex items-center justify-center space-x-1.5 font-label-md text-label-md hover:bg-surface-container active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">touch_app</span>
+<span>Plot Points</span>
+</button>
+</div>
+</section>
+<!-- 2. FIELD NAME INPUT -->
+<section class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-sm space-y-2">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface font-bold" for="fieldName">Field Identifier / Name *</label>
+<span class="font-label-sm text-label-sm text-outline">e.g., Plot 2</span>
+</div>
+<div class="relative">
+<input class="w-full min-h-[52px] bg-surface-container-lowest border-[1.5px] border-[#E2E8E2] rounded-xl px-4 text-on-surface font-body-md text-body-md focus:border-primary focus:ring-0 focus:outline-none transition-colors" id="fieldName" placeholder="e.g., East Tubewell Plot 2" type="text" value="East Tubewell Plot 2"/>
+<div class="absolute right-3.5 top-1/2 -translate-y-1/2 text-outline">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</div>
+</div>
+</section>
+<!-- 3. FIELD AREA & UNIT SELECTION -->
+<section class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface font-bold">Calculated Field Area *</label>
+<span class="font-label-sm text-label-sm text-primary font-semibold flex items-center">
+<span class="material-symbols-outlined text-[14px] mr-1">straighten</span> Derived from polygon
+        </span>
+</div>
+<!-- Area Stepper Input Cluster -->
+<div class="flex items-center space-x-2">
+<button aria-label="Decrease area" class="min-w-[48px] min-h-[52px] flex items-center justify-center bg-surface-container-low border border-[#E2E8E2] rounded-xl text-primary font-bold active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-[24px]">remove</span>
+</button>
+<div class="flex-1 relative">
+<input class="w-full min-h-[52px] text-center font-metric-display text-[24px] text-on-surface bg-surface-container-lowest border-[1.5px] border-[#E2E8E2] rounded-xl font-bold focus:border-primary focus:ring-0" type="text" value="2.5"/>
+</div>
+<button aria-label="Increase area" class="min-w-[48px] min-h-[52px] flex items-center justify-center bg-surface-container-low border border-[#E2E8E2] rounded-xl text-primary font-bold active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</button>
+</div>
+<!-- Unit Selector Pills -->
+<div class="grid grid-cols-3 gap-2 pt-1">
+<button class="min-h-[48px] rounded-xl border-2 border-primary bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center space-x-1 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+<span>Acres</span>
+</button>
+<button class="min-h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-label-md flex items-center justify-center hover:bg-surface-container-low active:scale-95 transition-colors" type="button">
+<span>Bigha</span>
+</button>
+<button class="min-h-[48px] rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-label-md flex items-center justify-center hover:bg-surface-container-low active:scale-95 transition-colors" type="button">
+<span>Hectares</span>
+</button>
+</div>
+</section>
+<!-- 4. SOIL TYPE CHIPS -->
+<section class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-sm space-y-2.5">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface font-bold">Soil Classification</label>
+<span class="font-label-sm text-label-sm text-outline">Select one</span>
+</div>
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Selected Soil -->
+<button class="min-h-[48px] p-2.5 rounded-xl border-2 border-primary bg-secondary-container/40 flex items-center justify-between text-left active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">landscape</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Alluvial Loam</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Option 2 -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">layers</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Clay Loam</span>
+</div>
+</button>
+<!-- Option 3 -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">grain</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Sandy Loam</span>
+</div>
+</button>
+<!-- Option 4 -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">terrain</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Black Soil</span>
+</div>
+</button>
+</div>
+</section>
+<!-- 5. PRIMARY WATER SOURCE CHIPS -->
+<section class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-sm space-y-2.5">
+<div class="flex items-center justify-between">
+<label class="font-label-md text-label-md text-on-surface font-bold">Primary Water Source</label>
+<span class="font-label-sm text-label-sm text-outline">Irrigation type</span>
+</div>
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Selected Source -->
+<button class="min-h-[48px] p-2.5 rounded-xl border-2 border-primary bg-secondary-container/40 flex items-center justify-between text-left active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">water_pump</span>
+<span class="font-label-md text-label-md text-on-surface font-bold leading-tight">Tubewell / Bore</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<!-- Canal -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">waves</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Canal</span>
+</div>
+</button>
+<!-- Rainfed -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">rainy</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Rainfed</span>
+</div>
+</button>
+<!-- Drip -->
+<button class="min-h-[48px] p-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest flex items-center justify-between text-left hover:border-primary active:scale-95 transition-all" type="button">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-outline text-[20px]">humidity_mid</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Drip / Micro</span>
+</div>
+</button>
+</div>
+</section>
+<!-- 6. PRIMARY CTA & OFFLINE NOTICE PILL -->
+<div class="pt-2 pb-6 space-y-3">
+<!-- Main Primary CTA Button -->
+<button class="w-full min-h-[52px] bg-primary-container text-on-primary rounded-xl font-body-md-bold text-body-md flex items-center justify-center space-x-2 shadow-md active:bg-[#1D4524] active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Save &amp; Register Field</span>
+</button>
+<!-- Offline Safety Notice Pill -->
+<div class="bg-[#FEF3C7] border border-[#F59E0B]/30 rounded-xl px-3.5 py-2.5 flex items-center justify-center space-x-2 shadow-sm text-center">
+<span class="material-symbols-outlined text-[#D97706] text-[18px] shrink-0" style="font-variation-settings: 'FILL' 1;">offline_pin</span>
+<span class="font-label-sm text-label-sm text-[#92400E] font-medium leading-snug">
+          Will save locally and sync automatically when online
+        </span>
+</div>
+</div>
+</main>
+<!-- PERSISTENT BOTTOM NAVIGATION BAR (Shared Component Source of Truth) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-margin pb-safe max-w-md mx-auto bg-surface-container-lowest border-t border-outline-variant shadow-md">
+<!-- Tab 1: Dashboard (Inactive) -->
+<a class="flex flex-col items-center justify-center text-outline font-body-md text-body-md min-h-[48px] min-w-[48px] hover:text-primary active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">eco</span>
+<span class="font-label-md text-label-md mt-0.5">Dashboard</span>
+</a>
+<!-- Tab 2: Fields (Active - Destination match for Field registration workflow) -->
+<a class="flex flex-col items-center justify-center text-primary font-body-md-bold text-body-md-bold min-h-[48px] min-w-[48px] hover:text-primary active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-md text-label-md mt-0.5">Fields</span>
+</a>
+</nav>
+</body></html>

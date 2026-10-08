@@ -58,7 +58,7 @@ async def health() -> dict:
 
 
 @app.post("/detect-disease", dependencies=[Depends(require_service_token)])
-async def detect_disease(file: UploadFile = File(...)) -> dict:
+async def detect_disease(file: UploadFile = File(...), heatmap: bool = False) -> dict:
     """Classify a leaf photo and hand back the archival-quality JPEG.
 
     The image is decoded exactly once here, so the bytes the backend persists
@@ -81,7 +81,14 @@ async def detect_disease(file: UploadFile = File(...)) -> dict:
             status_code=400, detail="Could not decode image"
         ) from exc
 
-    result = predict_disease(image)
+    result = predict_disease(image, heatmap=heatmap)
+
+    # Optional (?heatmap=true): Grad-CAM++ overlay showing where in the photo
+    # the evidence for the predicted class came from. It explains the model's
+    # attention, it does not prove the prediction is right.
+    heatmap_jpeg = result.pop("heatmap_jpeg", None)
+    if heatmap_jpeg is not None:
+        result["heatmap_b64"] = base64.b64encode(heatmap_jpeg).decode("ascii")
 
     # The gate lives here because this is where the probability is produced.
     # The backend attaches a treatment only when `actionable` is true.

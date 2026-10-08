@@ -4,6 +4,7 @@ import "./support/testEnv.ts";
 
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { buildFertilizerPlan } from "../modules/recommendations/fertilizer.recommender.ts";
 import { getTreatment, getConfidenceGate } from "../modules/rules/treatments.loader.ts";
 import { assessConfidence } from "../modules/rules/confidence.ts";
@@ -204,6 +205,45 @@ test("hispa is treated as an insect, not a fungus", () => {
 
 test("an unknown class is not actionable", () => {
   assert.equal(getTreatment("bacterial_blight", 0.99).actionable, false);
+});
+
+test("every class the model can predict has a treatment record", () => {
+  // The class list lives in ai/models/rice_v2/classes.json, written by the
+  // training run. A class missing here would come back "not actionable" and
+  // silently stop counting as a diagnosis in the crop twin.
+  const meta = JSON.parse(
+    fs.readFileSync(
+      new URL("../../../ai/models/rice_v2/classes.json", import.meta.url),
+      "utf-8"
+    )
+  );
+
+  for (const cls of meta.classes as string[]) {
+    assert.equal(
+      getTreatment(cls, 0.99).actionable,
+      true,
+      `no treatment record for model class "${cls}"`
+    );
+  }
+});
+
+test("a disease with no reviewed treatment names no chemical", () => {
+  // Classes added with the v2 model carry no dose until someone qualified has
+  // reviewed one. The table must say "nothing" rather than guess.
+  for (const cls of [
+    "bacterial_leaf_blight",
+    "sheath_blight",
+    "tungro",
+    "leaf_scald",
+    "leaf_smut",
+    "narrow_brown_spot",
+  ]) {
+    const result = getTreatment(cls, 0.9);
+    assert.equal(result.actionable, true);
+    if (result.actionable) {
+      assert.equal(result.treatment.chemical_treatment, null, cls);
+    }
+  }
 });
 
 // =====================================================================

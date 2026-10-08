@@ -12,23 +12,23 @@ export function ChatMessage({ message }: Props) {
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
           isUser
-            ? "bg-green-600 text-white rounded-br-md"
-            : "bg-gray-100 text-gray-800 rounded-bl-md"
+            ? "rounded-br-md bg-field-700 text-white"
+            : "rounded-bl-md bg-clay-100 text-clay-800"
         }`}
       >
-        <div className="whitespace-pre-wrap break-words leading-relaxed">
+        <div className="leading-relaxed break-words whitespace-pre-wrap">
           {message.content}
         </div>
-        <p
-          className={`text-[10px] mt-1.5 ${
-            isUser ? "text-green-200" : "text-gray-400"
+        <time
+          className={`mt-1.5 block text-[11px] ${
+            isUser ? "text-field-200" : "text-clay-400"
           }`}
         >
           {new Date(message.timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
-        </p>
+        </time>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Db } from "../../config/supabase.ts";
+import { insertIdempotent } from "../../utils/idempotentInsert.ts";
 
 export const createIrrigation = async (
   db: Db,
@@ -7,6 +8,7 @@ export const createIrrigation = async (
     crop_instance_id: string;
     amount: number;
     action_date?: string;
+    client_request_id?: string;
   }
 ) => {
   const { data: crop, error: cropError } = await db
@@ -26,18 +28,12 @@ export const createIrrigation = async (
     payload.action_date ? new Date(payload.action_date) : new Date()
   ).toISOString();
 
-  const { data, error } = await db
-    .from("irrigation_actions")
-    .insert({
-      crop_instance_id: payload.crop_instance_id,
-      amount: payload.amount,
-      action_date: action_date,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  return insertIdempotent(db, "irrigation_actions", {
+    crop_instance_id: payload.crop_instance_id,
+    amount: payload.amount,
+    action_date: action_date,
+    client_request_id: payload.client_request_id ?? null,
+  });
 };
 
 export const getIrrigationByCrop = async (

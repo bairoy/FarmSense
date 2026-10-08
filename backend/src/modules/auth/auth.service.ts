@@ -37,8 +37,21 @@ export const signIn = async (email: string, password: string) => {
     password,
   });
   if (error) throw error;
+
+  // The display name lives in our `users` table, not on the auth record, so
+  // login has to read it or the app has no name to greet the farmer with.
+  const { data: profile } = await supabaseAdmin
+    .from("users")
+    .select("name")
+    .eq("id", data.user.id)
+    .maybeSingle();
+
   return {
-    user: data.user,
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: profile?.name ?? data.user.email?.split("@")[0] ?? "",
+    },
     accessToken: data.session?.access_token,
     refreshToken: data.session?.refresh_token,
   };

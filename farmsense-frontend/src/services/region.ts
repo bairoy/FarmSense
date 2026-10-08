@@ -25,6 +25,7 @@ export type Region = {
   key: string;
   name: string;
   coordinates: { latitude: number; longitude: number };
+  bounds?: { south: number; north: number; west: number; east: number };
   land_units: {
     system: string;
     description: string;

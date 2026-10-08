@@ -1,0 +1,143 @@
+{
+ "P1-rice": {
+  "n": 140,
+  "bias": -0.18437857142857145,
+  "rmse": 0.42863873400068997,
+  "mae": 0.34657857142857146,
+  "r": 0.9254835309056211,
+  "mean_ours": 3.6121214285714287,
+  "mean_om": 3.7965,
+  "pm_days": 140,
+  "tot_eto": 505.697,
+  "tot_etc": 524.174,
+  "tot_rain": 756.6,
+  "gdd_end": 2495,
+  "soil": "region_default",
+  "taw": 150,
+  "phase_start_day": {
+   "seedling": 1,
+   "tillering": 18,
+   "flowering": 46,
+   "grain_filling": 72,
+   "maturity": 105
+  }
+ },
+ "P1-wheat": {
+  "n": 150,
+  "bias": -0.34325333333333335,
+  "rmse": 0.504732338307477,
+  "mae": 0.44333333333333336,
+  "r": 0.9857162743337358,
+  "mean_ours": 2.8848800000000003,
+  "mean_om": 3.228133333333334,
+  "pm_days": 150,
+  "tot_eto": 432.732,
+  "tot_etc": 327.703,
+  "tot_rain": 24.0,
+  "gdd_end": 2197,
+  "soil": "region_default",
+  "taw": 150,
+  "phase_start_day": {
+   "establishment": 1,
+   "tillering": 17,
+   "stem_elongation": 62,
+   "flowering": 96,
+   "grain_filling": 118,
+   "maturity": 137
+  }
+ },
+ "P2-rice": {
+  "n": 140,
+  "bias": -0.20245714285714284,
+  "rmse": 0.43535753779426595,
+  "mae": 0.3361571428571428,
+  "r": 0.9238792675200853,
+  "mean_ours": 3.5899,
+  "mean_om": 3.7923571428571425,
+  "pm_days": 140,
+  "tot_eto": 502.586,
+  "tot_etc": 521.029,
+  "tot_rain": 797.3000000000001,
+  "gdd_end": 2480,
+  "soil": "soilgrids",
+  "taw": 212.8,
+  "phase_start_day": {
+   "seedling": 1,
+   "tillering": 18,
+   "flowering": 46,
+   "grain_filling": 72,
+   "maturity": 106
+  }
+ },
+ "P2-wheat": {
+  "n": 150,
+  "bias": -0.36345333333333335,
+  "rmse": 0.508997262599057,
+  "mae": 0.44576000000000005,
+  "r": 0.987541156390126,
+  "mean_ours": 2.934079999999999,
+  "mean_om": 3.2975333333333334,
+  "pm_days": 150,
+  "tot_eto": 440.112,
+  "tot_etc": 333.079,
+  "tot_rain": 16.900000000000002,
+  "gdd_end": 2192,
+  "soil": "soilgrids",
+  "taw": 212.8,
+  "phase_start_day": {
+   "establishment": 1,
+   "tillering": 18,
+   "stem_elongation": 63,
+   "flowering": 96,
+   "grain_filling": 118,
+   "maturity": 138
+  }
+ },
+ "P3-rice": {
+  "n": 140,
+  "bias": -0.04600714285714285,
+  "rmse": 0.4154785794719145,
+  "mae": 0.30536428571428564,
+  "r": 0.9165260810364941,
+  "mean_ours": 3.6108499999999997,
+  "mean_om": 3.656857142857143,
+  "pm_days": 140,
+  "tot_eto": 505.519,
+  "tot_etc": 525.643,
+  "tot_rain": 970.3,
+  "gdd_end": 2427,
+  "soil": "soilgrids",
+  "taw": 172.3,
+  "phase_start_day": {
+   "seedling": 1,
+   "tillering": 18,
+   "flowering": 47,
+   "grain_filling": 74,
+   "maturity": 109
+  }
+ },
+ "P3-wheat": {
+  "n": 150,
+  "bias": -0.22907333333333332,
+  "rmse": 0.4539307068999262,
+  "mae": 0.3531266666666667,
+  "r": 0.9701060327419349,
+  "mean_ours": 2.7787266666666666,
+  "mean_om": 3.0077999999999996,
+  "pm_days": 150,
+  "tot_eto": 416.809,
+  "tot_etc": 322.272,
+  "tot_rain": 19.6,
+  "gdd_end": 2116,
+  "soil": "soilgrids",
+  "taw": 172.3,
+  "phase_start_day": {
+   "establishment": 1,
+   "tillering": 18,
+   "stem_elongation": 64,
+   "flowering": 97,
+   "grain_filling": 120,
+   "maturity": 140
+  }
+ }
+}

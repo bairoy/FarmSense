@@ -1,4 +1,5 @@
 import { useRegion, areaToSqm } from "../../../services/region";
+import { Skeleton, Alert } from "../../../components/ui";
 
 /**
  * Land area input in the region's customary units.
@@ -35,10 +36,8 @@ export function AreaInput({
   if (loading) {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Field Area
-        </label>
-        <div className="h-12 bg-gray-100 rounded-lg animate-pulse" />
+        <Label />
+        <Skeleton className="h-14 w-full" />
       </div>
     );
   }
@@ -46,13 +45,11 @@ export function AreaInput({
   if (error || !region) {
     return (
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Field Area
-        </label>
-        <p className="text-sm text-red-600">
+        <Label />
+        <Alert tone="error">
           Could not load the area units for your region. Reload the page and try
           again.
-        </p>
+        </Alert>
       </div>
     );
   }
@@ -63,14 +60,15 @@ export function AreaInput({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Field Area
-      </label>
+      <Label />
+      <p className="mb-3 text-sm text-clay-500">
+        As written on your khatauni. Leave a box empty if it does not apply.
+      </p>
 
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${levels.length}, minmax(0, 1fr))` }}
-      >
+      {/* A ladder of three or four boxes is laid out as a real grid rather than
+          squeezed onto one line - on a 360px screen four inputs share 40px each
+          and the unit names underneath become unreadable. */}
+      <div className="grid grid-cols-3 gap-3">
         {levels.map((level) => (
           <div key={level.key}>
             <input
@@ -79,16 +77,17 @@ export function AreaInput({
               // The smallest unit is only a few square metres, so a whole-number
               // step would make small plots impossible to enter accurately.
               step={level.key === smallest.key ? 0.5 : 1}
+              inputMode="decimal"
               value={value[level.key] || ""}
               onChange={(e) => set(level.key)(e.target.value)}
               placeholder="0"
               aria-label={level.label}
-              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full rounded-xl border border-clay-300 bg-white px-3 py-3 text-center text-lg font-semibold tabular text-clay-900 placeholder:font-normal placeholder:text-clay-300 focus:border-field-500 focus:outline-none focus:ring-4 focus:ring-field-500/15"
             />
-            <p className="text-xs text-gray-500 mt-1 text-center">
-              {level.label}{" "}
-              <span className="text-gray-400">{level.label_local}</span>
+            <p className="mt-1.5 text-center text-sm font-semibold capitalize text-clay-700">
+              {level.label}
             </p>
+            <p className="text-center text-xs text-clay-400">{level.label_local}</p>
           </div>
         ))}
       </div>
@@ -96,12 +95,25 @@ export function AreaInput({
       {/* Live conversion. Fertilizer and irrigation quantities are computed
           from this number, so the farmer should see it before saving. */}
       {sqm > 0 && (
-        <p className="mt-2 text-xs text-gray-500">
-          = {sqm.toLocaleString(undefined, { maximumFractionDigits: 0 })} m² (
-          {(sqm / 10000).toFixed(3)} hectares). Fertilizer and water amounts are
-          calculated from this.
+        <p className="mt-3 rounded-lg bg-field-50 px-3 py-2.5 text-sm text-field-900">
+          That is{" "}
+          <span className="font-bold tabular">
+            {sqm.toLocaleString(undefined, { maximumFractionDigits: 0 })} m&sup2;
+          </span>{" "}
+          <span className="text-field-700">
+            ({(sqm / 10000).toFixed(3)} hectares)
+          </span>
+          . Fertilizer and water amounts are calculated from this.
         </p>
       )}
     </div>
+  );
+}
+
+function Label() {
+  return (
+    <p className="mb-1.5 block text-sm font-semibold text-clay-800">
+      Field area <span className="text-alert-600">*</span>
+    </p>
   );
 }

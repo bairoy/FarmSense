@@ -42,12 +42,28 @@ const PARAMETERS = [
 const compact = (iso: string) => iso.replace(/-/g, "");
 const MISSING = -999;
 
+// This call sits on the crop page's request path (timeline.engine.ts's
+// Promise.all) with no cache at all, so every page view - even repeats of
+// the same crop a few seconds apart while testing - paid a full live
+// round-trip to NASA's archive. `end` is normally "today", so a short TTL
+// keeps results correct once a new day's data could exist while absorbing
+// repeat requests within a session.
+const cache = new Map<string, { value: Map<string, PowerDay>; expiresAt: number }>();
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+const cacheKey = (lat: number, lon: number, start: string, end: string) =>
+  `${lat.toFixed(3)},${lon.toFixed(3)},${start},${end}`;
+
 export const getPowerDaily = async (
   latitude: number,
   longitude: number,
   startDate: string,
   endDate: string
 ): Promise<Map<string, PowerDay>> => {
+  const key = cacheKey(latitude, longitude, startDate, endDate);
+  const cached = cache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
   const result = new Map<string, PowerDay>();
 
   const params = new URLSearchParams({
@@ -62,7 +78,7 @@ export const getPowerDaily = async (
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20_000);
+    const timer = setTimeout(() => controller.abort(), 8_000);
 
     const response = await fetch(`${POWER_URL}?${params}`, {
       signal: controller.signal,
@@ -97,11 +113,15 @@ export const getPowerDaily = async (
       });
     }
 
+    cache.set(key, { value: result, expiresAt: Date.now() + CACHE_TTL_MS });
     return result;
   } catch (err) {
     console.warn(`NASA POWER unavailable: ${(err as Error).message}`);
     // An empty map is a valid answer meaning "no radiation data" - callers
-    // fall back to Hargreaves ETo and mark the day lower-confidence.
+    // fall back to Hargreaves ETo and mark the day lower-confidence. Cached
+    // too (briefly), so a slow/failing upstream doesn't cost a full retry on
+    // every request either.
+    cache.set(key, { value: result, expiresAt: Date.now() + 5 * 60 * 1000 });
     return result;
   }
 };

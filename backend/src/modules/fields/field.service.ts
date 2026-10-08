@@ -1,4 +1,6 @@
 import type { Db } from "../../config/supabase.ts";
+import { ValidationError } from "../../utils/errors.ts";
+import { loadActiveRegion } from "../rules/rules.loader.ts";
 import {
   UNIT_KEYS,
   describeArea,
@@ -64,6 +66,28 @@ const resolvePoint = (input: CreateFieldInput | UpdateFieldInput) => {
     : null;
 };
 
+/**
+ * Rejects a location outside the calibrated region. Every constant in the rule
+ * engine (Kc curves, GDD phases, fertilizer rates) is specific to the district,
+ * so advice for a point elsewhere would look authoritative and be wrong.
+ */
+const assertInsideRegion = (point: { latitude: number; longitude: number } | null) => {
+  if (!point) return;
+  const region = loadActiveRegion();
+  const b = region.bounds;
+  if (!b) return;
+  const inside =
+    point.latitude >= b.south &&
+    point.latitude <= b.north &&
+    point.longitude >= b.west &&
+    point.longitude <= b.east;
+  if (!inside) {
+    throw new ValidationError(
+      `This location is outside ${region.region}. FarmSense is only calibrated for that district.`
+    );
+  }
+};
+
 const buildRow = (input: CreateFieldInput | UpdateFieldInput) => {
   const row: Record<string, unknown> = {};
 
@@ -72,6 +96,7 @@ const buildRow = (input: CreateFieldInput | UpdateFieldInput) => {
   if (input.boundary !== undefined) row.boundary = input.boundary;
 
   const point = resolvePoint(input);
+  assertInsideRegion(point);
   if (point) {
     row.latitude = point.latitude;
     row.longitude = point.longitude;

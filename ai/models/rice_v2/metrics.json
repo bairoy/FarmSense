@@ -1,0 +1,537 @@
+{
+  "arch": "efficientnet_b0",
+  "img_size": 256,
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "classes": [
+    "bacterial_leaf_blight",
+    "brown_spot",
+    "healthy",
+    "hispa",
+    "leaf_blast",
+    "leaf_scald",
+    "leaf_smut",
+    "narrow_brown_spot",
+    "sheath_blight",
+    "tungro"
+  ],
+  "holdout_source": "dhanshomadhan",
+  "dropped_classes": {},
+  "in_distribution_val": {
+    "n": 1496,
+    "accuracy": 0.9278,
+    "macro_f1": 0.9397,
+    "ece": 0.0672,
+    "gate": 0.65,
+    "withheld_pct": 7.15,
+    "accuracy_above_gate": 0.9604,
+    "per_class": {
+      "bacterial_leaf_blight": {
+        "support": 76,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "brown_spot": {
+        "support": 293,
+        "precision": 0.9288,
+        "recall": 0.8464,
+        "f1": 0.8857
+      },
+      "healthy": {
+        "support": 222,
+        "precision": 0.9345,
+        "recall": 0.964,
+        "f1": 0.949
+      },
+      "hispa": {
+        "support": 89,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "leaf_blast": {
+        "support": 173,
+        "precision": 0.8596,
+        "recall": 0.8844,
+        "f1": 0.8718
+      },
+      "leaf_scald": {
+        "support": 30,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "leaf_smut": {
+        "support": 72,
+        "precision": 0.7294,
+        "recall": 0.8611,
+        "f1": 0.7898
+      },
+      "narrow_brown_spot": {
+        "support": 32,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "sheath_blight": {
+        "support": 242,
+        "precision": 0.959,
+        "recall": 0.9669,
+        "f1": 0.963
+      },
+      "tungro": {
+        "support": 267,
+        "precision": 0.9398,
+        "recall": 0.9363,
+        "f1": 0.9381
+      }
+    },
+    "confusion": [
+      [
+        76,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        248,
+        7,
+        0,
+        16,
+        0,
+        11,
+        0,
+        2,
+        9
+      ],
+      [
+        0,
+        3,
+        214,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        2
+      ],
+      [
+        0,
+        0,
+        0,
+        89,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        4,
+        2,
+        0,
+        153,
+        0,
+        6,
+        0,
+        5,
+        3
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        6,
+        4,
+        0,
+        0,
+        0,
+        62,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        1,
+        0,
+        2,
+        0,
+        234,
+        2
+      ],
+      [
+        0,
+        5,
+        0,
+        0,
+        8,
+        0,
+        1,
+        0,
+        3,
+        250
+      ]
+    ]
+  },
+  "heldout_test": {
+    "n": 1106,
+    "accuracy": 0.2007,
+    "macro_f1": 0.1623,
+    "ece": 0.5128,
+    "gate": 0.65,
+    "withheld_pct": 36.08,
+    "accuracy_above_gate": 0.2037,
+    "per_class": {
+      "bacterial_leaf_blight": {
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "brown_spot": {
+        "support": 139,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "healthy": {
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "hispa": {
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "leaf_blast": {
+        "support": 272,
+        "precision": 0.3578,
+        "recall": 0.4118,
+        "f1": 0.3829
+      },
+      "leaf_scald": {
+        "support": 217,
+        "precision": 0.6667,
+        "recall": 0.0092,
+        "f1": 0.0182
+      },
+      "leaf_smut": {
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "narrow_brown_spot": {
+        "support": 0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "sheath_blight": {
+        "support": 283,
+        "precision": 0.2,
+        "recall": 0.0318,
+        "f1": 0.0549
+      },
+      "tungro": {
+        "support": 195,
+        "precision": 0.2735,
+        "recall": 0.5077,
+        "f1": 0.3555
+      }
+    },
+    "confusion": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        9,
+        10,
+        59,
+        1,
+        0,
+        0,
+        18,
+        42
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        16,
+        40,
+        16,
+        112,
+        0,
+        0,
+        1,
+        10,
+        77
+      ],
+      [
+        3,
+        0,
+        35,
+        7,
+        34,
+        2,
+        0,
+        0,
+        5,
+        131
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        46,
+        150,
+        65,
+        0,
+        0,
+        0,
+        9,
+        13
+      ],
+      [
+        1,
+        1,
+        33,
+        8,
+        43,
+        0,
+        0,
+        7,
+        3,
+        99
+      ]
+    ]
+  },
+  "minutes": 57.4,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 1.6751,
+      "train_acc": 0.4884,
+      "val_acc": 0.7259
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.9911,
+      "train_acc": 0.7895,
+      "val_acc": 0.7874
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.9431,
+      "train_acc": 0.8131,
+      "val_acc": 0.8041
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.8677,
+      "train_acc": 0.8445,
+      "val_acc": 0.8549
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.8256,
+      "train_acc": 0.8626,
+      "val_acc": 0.8242
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.7988,
+      "train_acc": 0.8743,
+      "val_acc": 0.8663
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.7624,
+      "train_acc": 0.8915,
+      "val_acc": 0.8703
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.7533,
+      "train_acc": 0.8946,
+      "val_acc": 0.8837
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.7318,
+      "train_acc": 0.9036,
+      "val_acc": 0.8977
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.7078,
+      "train_acc": 0.9166,
+      "val_acc": 0.9044
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.7032,
+      "train_acc": 0.9186,
+      "val_acc": 0.9031
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.6716,
+      "train_acc": 0.9304,
+      "val_acc": 0.9017
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.6569,
+      "train_acc": 0.9359,
+      "val_acc": 0.9218
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.6477,
+      "train_acc": 0.9394,
+      "val_acc": 0.9225
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.6308,
+      "train_acc": 0.948,
+      "val_acc": 0.9138
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.6229,
+      "train_acc": 0.9525,
+      "val_acc": 0.9231
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.6159,
+      "train_acc": 0.9541,
+      "val_acc": 0.9258
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.6125,
+      "train_acc": 0.9532,
+      "val_acc": 0.9245
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.6081,
+      "train_acc": 0.958,
+      "val_acc": 0.9278
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.6033,
+      "train_acc": 0.9579,
+      "val_acc": 0.9258
+    }
+  ]
+}

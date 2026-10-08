@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FarmSense - Diagnose Crop</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-surface-variant": "#414940",
+            "on-tertiary": "#ffffff",
+            "secondary-container": "#bdebbd",
+            "on-tertiary-fixed-variant": "#004b73",
+            "surface-variant": "#d9e6d9",
+            "secondary-fixed": "#c0eec0",
+            "inverse-on-surface": "#e7f4e7",
+            "on-tertiary-container": "#bbddff",
+            "surface-dim": "#d0ddd1",
+            "primary-fixed-dim": "#96d69a",
+            "on-tertiary-fixed": "#001d31",
+            "primary": "#145224",
+            "inverse-surface": "#28332a",
+            "background": "#f0fdf0",
+            "secondary": "#3f6743",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary-fixed-variant": "#274f2d",
+            "outline-variant": "#c0c9bd",
+            "error": "#ba1a1a",
+            "secondary-fixed-dim": "#a5d2a5",
+            "tertiary-fixed": "#cce5ff",
+            "inverse-primary": "#96d69a",
+            "surface-container": "#e4f1e4",
+            "surface": "#f0fdf0",
+            "outline": "#71796f",
+            "primary-fixed": "#b1f2b4",
+            "primary-container": "#2f6b3a",
+            "on-primary-fixed": "#002108",
+            "surface-container-high": "#dfecdf",
+            "on-background": "#131e16",
+            "on-error": "#ffffff",
+            "surface-container-highest": "#d9e6d9",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f0fdf0",
+            "surface-tint": "#2e6a39",
+            "on-secondary": "#ffffff",
+            "tertiary": "#004b74",
+            "tertiary-container": "#006499",
+            "on-secondary-container": "#436c47",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#a8e9ac",
+            "tertiary-fixed-dim": "#93ccff",
+            "on-primary-fixed-variant": "#135224",
+            "on-secondary-fixed": "#002108",
+            "surface-container-low": "#eaf7ea",
+            "on-primary": "#ffffff",
+            "on-surface": "#131e16"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.75rem",
+            "space-xl": "2rem",
+            "gutter": "1rem",
+            "space-xs": "0.375rem",
+            "space-lg": "1.5rem",
+            "space-md": "1rem",
+            "margin": "1rem"
+          },
+          "fontFamily": {
+            "headline-xl-mobile": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-xl": ["Inter"],
+            "title-sm": ["Inter"],
+            "body-md-bold": ["Inter"],
+            "headline-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "metric-display": ["Inter"]
+          },
+          "fontSize": {
+            "headline-xl-mobile": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-lg": ["17px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "title-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "body-md-bold": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "headline-lg": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "label-md": ["14px", {"lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "500"}],
+            "metric-display": ["34px", {"lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      font-size: 22px;
+      line-height: 1;
+      display: inline-block;
+    }
+    @keyframes laser-scan {
+      0% { top: 6%; opacity: 0.9; }
+      50% { top: 90%; opacity: 0.6; }
+      100% { top: 6%; opacity: 0.9; }
+    }
+    .animate-scan-line {
+      animation: laser-scan 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen pb-24">
+<!-- Mobile View Container -->
+<div class="max-w-md mx-auto min-h-screen bg-background relative flex flex-col">
+<!-- Top Navigation Anchor (Shared Component: TopAppBar with Task Context) -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm w-full">
+<div class="flex justify-between items-center w-full px-margin h-16 max-w-md mx-auto">
+<button aria-label="Go Back" class="flex items-center justify-center min-w-[48px] min-h-[48px] -ml-2 text-primary hover:bg-surface-container-low rounded-full transition-transform active:scale-95">
+<span class="material-symbols-outlined text-primary text-[24px]">arrow_back</span>
+</button>
+<div class="flex flex-col items-center">
+<span class="text-headline-md font-headline-md text-primary tracking-tight">Diagnose Crop</span>
+<span class="text-label-sm font-label-sm text-outline">Optical Leaf Analysis</span>
+</div>
+<div class="min-w-[48px] min-h-[48px] flex items-center justify-end -mr-2">
+<div class="w-10 h-10 rounded-full border border-outline-variant overflow-hidden bg-surface-container p-0.5" title="User farmer profile photo">
+<img class="w-full h-full object-cover rounded-full" data-alt="Close-up outdoor portrait of an experienced Indian wheat farmer wearing a traditional turban and linen work shirt standing under bright midday rural sunshine, captured in crisp, natural, authentic photographic style with sharp field detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAdu5VmjNaB-AIgCzhk6Rh8n6esdd0M-CyH2Fgf8M6NXhpioXOYIkwY8kFggPGMTzl992Q06LIA6-F95Y5UxZZQ2oEtPLU9koXJlavhqsdYkuo34OGYpVGgoVsTcXS4vfvpv6_IswIXK-wbpdC0h8VNdlb3HarsciFnLMrbfLMk1_DYQWK-GFgJJc6o3Sx_RSjLNKw_-045Hooq2L24j2ijEwXKBut-pEnNCvfxXx6mj-s8f-ug74X"/>
+</div>
+</div>
+</div>
+<!-- Context Sub-bar: Field Selection -->
+<div class="px-margin pb-3 pt-1 flex items-center justify-between bg-surface-container-lowest">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="text-label-md font-label-md text-on-surface">Field #2: Rabi Wheat</span>
+</div>
+<span class="text-label-sm font-label-sm text-outline font-medium">GPS: 26.76°N, 83.37°E</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 px-margin py-space-md space-y-space-md">
+<!-- Viewfinder Scan Container -->
+<div class="relative w-full rounded-2xl overflow-hidden bg-inverse-surface border border-outline-variant shadow-md">
+<!-- Leaf Scan View Area -->
+<div class="relative w-full aspect-[4/3] overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Macro agricultural photography of a live green wheat plant leaf showing early visible linear stripes of yellow-orange rust fungus pustules, shot directly under radiant midday natural solar lighting with razor-sharp leaf vein clarity against fertile agrarian soil." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqZM_fM79dR-N9rSPDXHoE8AOejuHz2pLqJMIFqW2b1bgi0HaDclgfV48vdDxub3uSKqryJPrG_anGTjXZ4gkksZX6R-ToQwfamUq6FgfTEXwlTIbRBkkOALZj3QsfRjz4fsAXMx9UVan1iYCASoMzqiabRGeOZGZii-gEf18u-AsaPveGIfo3JFPD_3J_x1CN4t3r5ZcF_w4IY17hlfbZ7z5VfSKn8p-CMIwcpK7Tq5wdqNs6H2UW"/>
+<!-- Viewfinder Vignette Overlay -->
+<div class="absolute inset-0 bg-black/25 pointer-events-none"></div>
+<!-- Viewfinder Corner Brackets -->
+<div class="absolute inset-4 pointer-events-none">
+<!-- Top Left -->
+<div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-fixed rounded-tl-lg"></div>
+<!-- Top Right -->
+<div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-fixed rounded-tr-lg"></div>
+<!-- Bottom Left -->
+<div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-fixed rounded-bl-lg"></div>
+<!-- Bottom Right -->
+<div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-fixed rounded-br-lg"></div>
+<!-- Center Laser Scanning Animation Line -->
+<div class="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary-fixed to-transparent animate-scan-line shadow-[0_0_8px_#b1f2b4]"></div>
+</div>
+<!-- Active AI Telemetry Tag -->
+<div class="absolute top-3 left-3 bg-inverse-surface/85 backdrop-blur-sm px-2.5 py-1 rounded-md border border-outline-variant/40 flex items-center gap-1.5 text-surface-container-lowest">
+<span class="w-2 h-2 rounded-full bg-primary-fixed animate-ping"></span>
+<span class="text-label-sm font-label-sm tracking-wide text-primary-fixed">LIVE AI SCANNER</span>
+</div>
+<!-- Zoom / Calibration Badge -->
+<div class="absolute top-3 right-3 bg-inverse-surface/85 backdrop-blur-sm px-2.5 py-1 rounded-md border border-outline-variant/40 text-surface-container-lowest">
+<span class="text-label-sm font-label-sm font-semibold">1.2× FOCUS</span>
+</div>
+</div>
+<!-- Camera Shutter & Control Deck -->
+<div class="bg-inverse-surface px-4 py-3 flex items-center justify-between border-t border-outline/30">
+<!-- Switch to Gallery / Upload -->
+<button aria-label="Upload from Gallery" class="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-surface-container-lowest hover:text-primary-fixed active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[24px]">photo_library</span>
+<span class="text-label-sm font-label-sm text-surface-dim mt-0.5">Gallery</span>
+</button>
+<!-- Large Primary Field Shutter Action -->
+<button aria-label="Capture leaf image" class="relative flex items-center justify-center w-16 h-16 rounded-full bg-primary-container border-4 border-surface-container-lowest active:scale-95 transition-transform shadow-lg">
+<div class="w-11 h-11 rounded-full bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">camera</span>
+</div>
+</button>
+<!-- Flash Toggle -->
+<button aria-label="Toggle Flash" class="flex flex-col items-center justify-center min-w-[48px] min-h-[48px] text-surface-container-lowest hover:text-primary-fixed active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[24px]">flash_on</span>
+<span class="text-label-sm font-label-sm text-surface-dim mt-0.5">Flash</span>
+</button>
+</div>
+</div>
+<!-- Instant AI Diagnosis Card (High Contrast for Outdoor Glare) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-2xl p-space-md shadow-sm">
+<!-- Header Pill & Match Confidence Cluster -->
+<div class="flex items-start justify-between gap-2 border-b border-outline-variant pb-space-sm mb-space-sm">
+<div>
+<span class="text-label-sm font-label-sm text-outline font-semibold tracking-wider">PRIMARY PATHOLOGY IDENTIFIED</span>
+<h2 class="text-headline-md font-headline-md text-on-surface leading-tight mt-0.5">Yellow Rust</h2>
+<p class="text-body-md text-on-surface-variant italic">Puccinia striiformis</p>
+</div>
+<!-- 94% Confidence Pill -->
+<div class="inline-flex items-center gap-1 bg-[#DCFCE7] text-[#16A34A] border border-[#BBF7D0] px-3 py-1 rounded-full flex-shrink-0">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-label-md font-label-md font-bold">94% Match</span>
+</div>
+</div>
+<!-- Severity & Threat Level Callout -->
+<div class="grid grid-cols-2 gap-space-sm mb-space-md">
+<div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+<span class="text-label-sm font-label-sm text-on-surface-variant block mb-1">Threat Urgency</span>
+<div class="inline-flex items-center gap-1.5 text-error font-body-md-bold">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-label-md font-label-md">Treat in 3 Days</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1">Severity: Moderate (Level 2)</p>
+</div>
+<div class="bg-surface-container-low border border-outline-variant rounded-xl p-3">
+<span class="text-label-sm font-label-sm text-on-surface-variant block mb-1">Secondary Anomaly</span>
+<div class="inline-flex items-center gap-1 text-tertiary font-body-md-bold">
+<span class="material-symbols-outlined text-[18px]">water_drop</span>
+<span class="text-label-md font-label-md">Nitrogen Stress</span>
+</div>
+<p class="text-label-sm font-label-sm text-outline mt-1">Slight chlorosis detected</p>
+</div>
+</div>
+<!-- Actionable Field Agronomy Protocol -->
+<div class="space-y-space-xs mb-space-md">
+<h3 class="text-title-sm font-title-sm text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]">medical_services</span>
+            Prescribed Treatment Plan
+          </h3>
+<div class="space-y-2 mt-2">
+<!-- Recommendation 1 -->
+<div class="flex items-start gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold mt-0.5">1</span>
+<div>
+<p class="text-body-md-bold font-body-md-bold text-on-surface leading-tight">Spray Propiconazole 25% EC</p>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">Dose: 200 ml in 200 Litres of water per acre. Alternatively, top-dress 25kg urea/acre if rain is forecast.</p>
+</div>
+</div>
+<!-- Recommendation 2 -->
+<div class="flex items-start gap-3 p-3 bg-surface-container-low rounded-xl border border-outline-variant">
+<span class="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center text-label-sm font-bold mt-0.5">2</span>
+<div>
+<p class="text-body-md-bold font-body-md-bold text-on-surface leading-tight">Suspend Overhead Sprinkler Irrigation</p>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">Keep canopy surface dry for 48 hours post-spraying to prevent rapid spore dispersal across Field #2.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Operational Action Button Stack -->
+<div class="space-y-2.5 pt-1">
+<!-- Primary CTA Button (Style Anchor: Primary Field CTA) -->
+<button class="w-full min-h-[52px] bg-primary hover:bg-[#1D4524] active:bg-[#1D4524] text-on-primary font-body-md-bold text-body-md-bold rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-sm">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">save</span>
+            Save to Crop Log
+          </button>
+<div class="grid grid-cols-2 gap-2.5">
+<!-- Secondary Action: Agri Officer -->
+<button class="min-h-[48px] bg-surface-container-lowest border-[1.5px] border-primary text-primary hover:bg-surface-container-low active:bg-surface-container font-body-md-bold text-body-md-bold rounded-xl flex items-center justify-center gap-1.5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[18px]">share</span>
+              Consult Officer
+            </button>
+<!-- Re-scan Button -->
+<button class="min-h-[48px] bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high font-body-md-bold text-body-md-bold rounded-xl flex items-center justify-center gap-1.5 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+              Re-scan Leaf
+            </button>
+</div>
+</div>
+</section>
+<!-- Sync & Historical Integrity Footer Note -->
+<div class="flex items-center justify-center gap-2 py-1">
+<span class="material-symbols-outlined text-[#16A34A] text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-label-sm font-label-sm text-outline">Offline Cache Stored • Ready to auto-sync</span>
+</div>
+</main>
+<!-- Persistent Bottom Navigation Bar (Exact execution of Shared Components JSON: BottomNavBar) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-margin pb-safe max-w-md mx-auto bg-surface-container-lowest border-t border-outline-variant shadow-md">
+<!-- Tab 1: Dashboard -->
+<a class="flex flex-col items-center justify-center text-outline font-body-md text-body-md min-h-[48px] min-w-[48px] hover:text-primary active:scale-95 transition-transform" href="#dashboard">
+<span class="material-symbols-outlined text-[24px]">eco</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<!-- Tab 2: Fields (Active: Since this diagnoses crop leaf under specific Field #2) -->
+<a class="flex flex-col items-center justify-center text-primary font-body-md-bold text-body-md-bold min-h-[48px] min-w-[48px] hover:text-primary active:scale-95 transition-transform" href="#fields">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="text-label-md font-label-md">Fields</span>
+</a>
+</nav>
+</div>
+</body></html>

@@ -12,10 +12,12 @@ import type { AnalysisResult, CropImage } from "./disease.types";
 export const analyseCropImage = async (
   cropId: string,
   file: File,
+  takenOn: string,
   onProgress?: (pct: number) => void
 ): Promise<AnalysisResult> => {
   const form = new FormData();
   form.append("file", file);
+  form.append("taken_on", takenOn);
 
   const { data } = await api.post<AnalysisResult>(
     `/disease/crop/${cropId}/analyse`,

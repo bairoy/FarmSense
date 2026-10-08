@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   backend:
     build: ./backend
@@ -18,9 +16,16 @@ services:
       # land-unit ladder and fertilizer rates the whole engine runs on.
       - DEFAULT_REGION=${DEFAULT_REGION:-gorakhpur}
       # Optional integrations
+      # Object storage. Defaults point at the bundled MinIO, so the stack has
+      # working image storage out of the box with no cloud account. To use
+      # Cloudflare R2 instead, leave S3_ENDPOINT unset and set R2_ACCOUNT_ID.
+      - S3_ENDPOINT=${S3_ENDPOINT-http://minio:9000}
+      - S3_FORCE_PATH_STYLE=${S3_FORCE_PATH_STYLE:-true}
+      # What the browser uses to load photos (the host-mapped MinIO port).
+      - S3_PUBLIC_ENDPOINT=${S3_PUBLIC_ENDPOINT-http://localhost:9002}
       - R2_ACCOUNT_ID=${R2_ACCOUNT_ID:-}
-      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-}
-      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-}
+      - R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID:-farmsense}
+      - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-farmsense-dev-secret}
       # Must be R2_BUCKET: that is the name config/env.ts reads. Passing
       # R2_BUCKET_NAME left the bucket on its default while every credential
       # was set, so uploads failed only at runtime, only in the container.
@@ -29,6 +34,7 @@ services:
       - CDSE_CLIENT_SECRET=${CDSE_CLIENT_SECRET:-}
     depends_on:
       - ai
+      - minio
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:5050/api/health"]
@@ -47,6 +53,28 @@ services:
       - backend
     restart: unless-stopped
 
+  # S3-compatible object storage for crop photographs.
+  #
+  # Ports are 9002/9003 rather than the usual 9000/9001 so this does not
+  # collide with any other MinIO already running on the host.
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9002:9000"   # S3 API
+      - "9003:9001"   # web console
+    environment:
+      - MINIO_ROOT_USER=${R2_ACCESS_KEY_ID:-farmsense}
+      - MINIO_ROOT_PASSWORD=${R2_SECRET_ACCESS_KEY:-farmsense-dev-secret}
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   ai:
     build: ./ai
     ports:
@@ -54,12 +82,17 @@ services:
     environment:
       - AI_SERVICE_TOKEN=${AI_SERVICE_TOKEN}
       - BACKEND_URL=http://backend:5050
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
-      - CONFIDENCE_GATE=${CONFIDENCE_GATE:-0.70}
+      - CONFIDENCE_GATE=${CONFIDENCE_GATE:-0.65}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+volumes:
+  # Survives `docker compose down` so crop photographs are not lost on a
+  # restart. `docker compose down -v` deletes it deliberately.
+  minio_data:

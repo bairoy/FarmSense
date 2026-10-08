@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { SendHorizontal } from "lucide-react";
 
 type Props = {
   onSend: (message: string) => void;
@@ -39,35 +40,28 @@ export function ChatInput({
   };
 
   return (
-    <div className="flex items-end gap-2 p-3 border-t border-gray-200 bg-white">
+    <div
+      className="flex items-end gap-2 border-t border-clay-200 bg-white p-3"
+      style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+    >
       <textarea
         ref={textareaRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
+        aria-label="Your question"
         disabled={disabled}
         rows={1}
-        className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm
-          focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent
-          disabled:bg-gray-100 disabled:cursor-not-allowed"
+        className="flex-1 resize-none rounded-xl border border-clay-300 px-3 py-2.5 text-base text-clay-900 placeholder:text-clay-400 focus:border-field-500 focus:outline-none focus:ring-4 focus:ring-field-500/15 disabled:bg-clay-100"
       />
       <button
         onClick={handleSubmit}
         disabled={disabled || !input.trim()}
-        className="flex-shrink-0 w-10 h-10 rounded-full bg-green-600 text-white
-          flex items-center justify-center hover:bg-green-700 transition
-          disabled:bg-gray-300 disabled:cursor-not-allowed"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-field-700 text-white transition-colors hover:bg-field-800 disabled:bg-clay-300"
         aria-label="Send message"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="w-5 h-5"
-        >
-          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-        </svg>
+        <SendHorizontal className="h-5 w-5" />
       </button>
     </div>
   );

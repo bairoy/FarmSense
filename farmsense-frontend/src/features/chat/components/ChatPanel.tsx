@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Sprout, Trash2, X } from "lucide-react";
+
 import { useChatHistory } from "../useChatHistory";
 import { sendChatMessage } from "../chat.service";
 import { ChatMessage } from "./ChatMessage";
@@ -29,36 +31,38 @@ export function ChatPanel({ cropId, isOpen, onClose }: Props) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
   const handleSend = async (message: string) => {
     setError(null);
     setLastToolsUsed([]);
 
-    addMessage({
-      role: "user",
-      content: message,
-      timestamp: Date.now(),
-    });
-
+    addMessage({ role: "user", content: message, timestamp: Date.now() });
     setLoading(true);
 
     try {
       const response = await sendChatMessage(message, cropId, getApiHistory());
 
       setLastToolsUsed(response.tools_used || []);
-
       addMessage({
         role: "assistant",
         content: response.reply,
         timestamp: Date.now(),
       });
     } catch (err) {
-      const errorMsg = apiErrorMessage(
-        err,
-        err instanceof Error && err.message
-          ? err.message
-          : "Failed to send message. Please try again."
+      setError(
+        apiErrorMessage(
+          err,
+          err instanceof Error && err.message
+            ? err.message
+            : "Failed to send message. Please try again."
+        )
       );
-      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -67,112 +71,117 @@ export function ChatPanel({ cropId, isOpen, onClose }: Props) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 w-[360px] max-w-[calc(100vw-2rem)] h-[500px] max-h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col z-50">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-green-600 rounded-t-2xl">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">🌾</span>
-          <h3 className="font-semibold text-white">Crop Assistant</h3>
+    // On a phone this is a sheet filling the lower screen, not a 360px card
+    // floating over content it is too small to cover.
+    <div
+      role="dialog"
+      aria-label="Crop assistant"
+      className="fixed inset-x-0 bottom-0 z-60 flex h-[72dvh] flex-col rounded-t-2xl border border-clay-200 bg-white shadow-float sm:inset-x-auto sm:bottom-24 sm:right-6 sm:h-[540px] sm:w-96 sm:rounded-2xl"
+    >
+      <header className="flex items-center justify-between gap-2 rounded-t-2xl bg-field-700 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/15">
+            <Sprout className="h-4 w-4 text-white" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="truncate font-bold text-white">Crop assistant</h3>
+            <p className="truncate text-xs text-field-100">
+              Answers come from your own field data
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+
+        <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={clearHistory}
-            className="p-1.5 text-green-100 hover:text-white hover:bg-green-700 rounded-lg transition"
-            title="Clear history"
+            title="Clear this conversation"
+            aria-label="Clear this conversation"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-field-100 transition-colors hover:bg-field-800 hover:text-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.75 1A2.75 2.75 0 0 0 6 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 1 0 .23 1.482l.149-.022.841 10.518A2.75 2.75 0 0 0 7.596 19h4.807a2.75 2.75 0 0 0 2.742-2.53l.841-10.52.149.023a.75.75 0 0 0 .23-1.482A41.03 41.03 0 0 0 14 4.193V3.75A2.75 2.75 0 0 0 11.25 1h-2.5ZM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4ZM8.58 7.72a.75.75 0 0 0-1.5.06l.3 7.5a.75.75 0 1 0 1.5-.06l-.3-7.5Zm4.34.06a.75.75 0 1 0-1.5-.06l-.3 7.5a.75.75 0 1 0 1.5.06l.3-7.5Z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <Trash2 className="h-4 w-4" />
           </button>
           <button
             onClick={onClose}
-            className="p-1.5 text-green-100 hover:text-white hover:bg-green-700 rounded-lg transition"
             title="Close"
+            aria-label="Close the crop assistant"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-field-100 transition-colors hover:bg-field-800 hover:text-white"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-4 h-4"
-            >
-              <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z" />
-            </svg>
+            <X className="h-4 w-4" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && !loading && (
-          <div className="text-center py-6">
-            <div className="text-4xl mb-3">🌱</div>
-            <p className="text-gray-600 font-medium mb-1">
-              Ask me about your crop!
+          <div className="py-4 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-field-100 text-field-700">
+              <Sprout className="h-6 w-6" />
+            </span>
+            <p className="mt-3 font-bold text-clay-900">Ask about this crop</p>
+            <p className="mx-auto mt-1 max-w-xs text-sm text-clay-500">
+              Every number in an answer comes back from your field&rsquo;s own
+              data, not from the model&rsquo;s memory.
             </p>
-            <p className="text-xs text-gray-400 mb-4">
-              I can check crop health, irrigation needs, and fertilizer plans.
-            </p>
-            <div className="space-y-2">
-              {QUICK_QUESTIONS.map((q) => (
+
+            <div className="mt-4 space-y-2">
+              {QUICK_QUESTIONS.map((question) => (
                 <button
-                  key={q}
-                  onClick={() => handleSend(q)}
-                  className="w-full text-left px-3 py-2 text-sm bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition border border-green-200"
+                  key={question}
+                  onClick={() => handleSend(question)}
+                  className="w-full rounded-xl border border-field-200 bg-field-50 px-3 py-2.5 text-left text-sm font-medium text-field-800 transition-colors hover:border-field-400 hover:bg-field-100"
                 >
-                  {q}
+                  {question}
                 </button>
               ))}
             </div>
           </div>
         )}
-        {messages.map((msg, idx) => (
-          <ChatMessage key={idx} message={msg} />
+
+        {messages.map((message, index) => (
+          <ChatMessage key={index} message={message} />
         ))}
+
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+            <div className="rounded-2xl rounded-bl-md bg-clay-100 px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  <span
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  />
+                  {[0, 0.15, 0.3].map((delay) => (
+                    <span
+                      key={delay}
+                      className="h-2 w-2 animate-bounce rounded-full bg-clay-400"
+                      style={{ animationDelay: `${delay}s` }}
+                    />
+                  ))}
                 </div>
-                <span className="text-xs text-gray-500">Checking your crop...</span>
+                <span className="text-xs text-clay-500">Checking your crop...</span>
               </div>
             </div>
           </div>
         )}
+
         {error && (
-          <div className="text-center text-red-600 text-sm py-2 px-4 bg-red-50 rounded-lg border border-red-200">
+          <p
+            role="alert"
+            className="rounded-xl border border-alert-200 bg-alert-50 px-3 py-2 text-center text-sm text-alert-800"
+          >
             {error}
-          </div>
+          </p>
         )}
+
+        {/* Which backend tools produced the answer. This is the grounding rule
+            made visible: the assistant explains, it never originates. */}
         {lastToolsUsed.length > 0 && messages.length > 0 && !loading && (
-          <div className="text-center">
-            <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-              Used: {lastToolsUsed.map(t => t.replace(/_/g, " ")).join(", ")}
+          <p className="text-center">
+            <span className="rounded-full bg-clay-100 px-2.5 py-1 text-[11px] text-clay-500">
+              Checked: {lastToolsUsed.map((t) => t.replace(/_/g, " ")).join(", ")}
             </span>
-          </div>
+          </p>
         )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
       <ChatInput onSend={handleSend} disabled={loading} />
     </div>
   );

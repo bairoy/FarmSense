@@ -21,6 +21,7 @@ export const getRegionHandler = async (_req: Request, res: Response) => {
     key: activeRegionName(),
     name: region.region,
     coordinates: region.coordinates,
+    bounds: region.bounds,
     land_units: {
       system: region.land_units.system,
       description: region.land_units.description,

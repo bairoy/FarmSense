@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FarmSense - Dashboard</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#001d31",
+            "primary-fixed": "#b1f2b4",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#dfecdf",
+            "primary-fixed-dim": "#96d69a",
+            "error-container": "#ffdad6",
+            "surface-container-low": "#eaf7ea",
+            "on-tertiary-fixed-variant": "#004b73",
+            "inverse-surface": "#28332a",
+            "secondary-fixed": "#c0eec0",
+            "inverse-on-surface": "#e7f4e7",
+            "on-error-container": "#93000a",
+            "tertiary-fixed-dim": "#93ccff",
+            "tertiary-fixed": "#cce5ff",
+            "secondary": "#3f6743",
+            "surface-container-highest": "#d9e6d9",
+            "on-primary-fixed-variant": "#135224",
+            "on-secondary-container": "#436c47",
+            "inverse-primary": "#96d69a",
+            "outline": "#71796f",
+            "surface": "#f0fdf0",
+            "on-secondary-fixed-variant": "#274f2d",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#002108",
+            "on-error": "#ffffff",
+            "primary-container": "#2f6b3a",
+            "surface-variant": "#d9e6d9",
+            "secondary-container": "#bdebbd",
+            "surface-bright": "#f0fdf0",
+            "on-primary-container": "#a8e9ac",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#bbddff",
+            "surface-tint": "#2e6a39",
+            "tertiary": "#004b74",
+            "on-surface-variant": "#414940",
+            "on-background": "#131e16",
+            "secondary-fixed-dim": "#a5d2a5",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#006499",
+            "surface-dim": "#d0ddd1",
+            "on-secondary-fixed": "#002108",
+            "background": "#f0fdf0",
+            "primary": "#145224",
+            "on-surface": "#131e16",
+            "surface-container": "#e4f1e4",
+            "outline-variant": "#c0c9bd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.75rem",
+            "space-md": "1rem",
+            "space-xs": "0.375rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-md": ["Inter"],
+            "body-md-bold": ["Inter"],
+            "title-sm": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-lg": ["17px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "metric-display": ["34px", {"lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+            "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "500"}],
+            "label-md": ["14px", {"lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "headline-xl-mobile": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "body-md-bold": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "title-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    body {
+      background-color: #f7f9f6;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface flex justify-center min-h-screen">
+<!-- Mobile Canvas Frame: 390px strict container -->
+<div class="w-full max-w-[390px] min-h-screen bg-background relative flex flex-col pb-24 shadow-2xl">
+<!-- TOP APP BAR / BRAND HEADER (Shared Component mapped) -->
+<header class="bg-surface-container-lowest sticky top-0 z-40 w-full px-margin h-16 flex justify-between items-center shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="eco" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="font-headline-md text-headline-md text-primary tracking-tight">FarmSense</span>
+</div>
+<!-- Farmer Profile Avatar with Active Dot -->
+<div class="relative flex items-center justify-center">
+<div class="w-10 h-10 rounded-full border border-outline-variant overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of an Indian male farmer in his late forties wearing a clean light-colored cotton turban and smiling warmly under clear outdoor sunshine. The background displays lush agricultural fields under bright daylight. High contrast, sharp detail, professional documentary agricultural aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkYAs5Qf656lmpAKPuXyz9fb2K-AvJoXoALNVG-EOQ9gvbYbPFRA8F9r-J2ha2dRDZ7jltRlMusYnT3kvHW6NF5TNQv2SrzHIVvyq57hzUzza8C5ncjq8vtCVRCuLaBD4GXeYjiAwKEHiqr0C1jFDTizNfbycH9n_Tzt2Vnwxj77HTG6zmpwBrjv93TMT9MuPz4JerAD0yI1OoqsqxdrcmLsCUA6NQaJOr2QyXOKSXe5CtkVBIUP85"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 bg-primary rounded-full border-2 border-surface-container-lowest"></span>
+</div>
+</header>
+<!-- FARMER GREETING & LOCATION SUBTITLE -->
+<section class="px-margin pt-4 pb-2 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex justify-between items-baseline">
+<h1 class="font-headline-md text-headline-md text-on-surface">Namaste, Rajesh Ji</h1>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface-variant font-label-md text-label-md mt-0.5">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="location_on">location_on</span>
+<span>Gorakhpur, UP</span>
+<span>•</span>
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="wb_sunny">wb_sunny</span>
+<span>Today Sunny 32°C</span>
+</div>
+</section>
+<!-- SUBTLE OFFLINE SYNC BANNER -->
+<div class="px-margin py-2.5 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="sync" style="font-variation-settings: 'FILL' 1;">sync</span>
+<span class="font-label-sm text-label-sm text-on-surface">⚡ 2 logs queued offline • Will sync when connected</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="cloud_off">cloud_off</span>
+</div>
+<!-- MAIN SCROLLABLE CONTENT AREA -->
+<main class="flex-1 px-margin pt-4 space-y-4">
+<!-- 1. HERO 'MY FIELDS' STAT CARD -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm relative overflow-hidden">
+<!-- Subtle Top Accent border line using primary-container -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-primary"></div>
+<div class="flex justify-between items-start mb-3 pt-1">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Field Overview</span>
+<div class="flex items-baseline gap-2 mt-0.5">
+<span class="font-metric-display text-metric-display text-primary">4</span>
+<span class="font-title-sm text-title-sm text-on-surface">Active Fields</span>
+</div>
+</div>
+<!-- Status Pill -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[16px]" data-icon="water_drop" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span class="font-label-md text-label-md text-primary">68% Optimal</span>
+</div>
+</div>
+<!-- Metrics Grid Inside Hero Card -->
+<div class="grid grid-cols-2 gap-3 py-3 border-y border-outline-variant my-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Total Area</span>
+<span class="font-body-md-bold text-body-md-bold text-on-surface mt-0.5">12.5 Acres Total</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Soil Moisture Status</span>
+<span class="font-body-md-bold text-body-md-bold text-on-surface mt-0.5">Zone A &amp; C Stable</span>
+</div>
+</div>
+<!-- Prominent CTA Button -->
+<button class="w-full mt-3 h-[48px] bg-primary text-on-primary rounded-xl font-body-md-bold text-body-md-bold flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150">
+<span>View All Fields</span>
+<span class="material-symbols-outlined text-[20px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</section>
+<!-- 2. QUICK-ACTIONS GRID (2 columns, 48px touch targets) -->
+<section>
+<h2 class="font-title-sm text-title-sm text-on-surface mb-2.5">Field Actions</h2>
+<div class="grid grid-cols-2 gap-3">
+<!-- Action 1: My Fields -->
+<button class="bg-surface-container-lowest border border-outline-variant p-3.5 rounded-xl text-left flex flex-col justify-between min-h-[92px] active:scale-95 transition-transform duration-150 hover:bg-surface-container-low shadow-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+</div>
+<div>
+<span class="font-body-md-bold text-body-md-bold text-on-surface block">My Fields</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">4 fields registered</span>
+</div>
+</button>
+<!-- Action 2: Add New Field -->
+<button class="bg-surface-container-lowest border border-outline-variant p-3.5 rounded-xl text-left flex flex-col justify-between min-h-[92px] active:scale-95 transition-transform duration-150 hover:bg-surface-container-low shadow-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="add_circle">add_circle</span>
+</div>
+<div>
+<span class="font-body-md-bold text-body-md-bold text-on-surface block">Add New Field</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">GPS or Map pin</span>
+</div>
+</button>
+<!-- Action 3: Diagnose Crop -->
+<button class="bg-surface-container-lowest border border-outline-variant p-3.5 rounded-xl text-left flex flex-col justify-between min-h-[92px] active:scale-95 transition-transform duration-150 hover:bg-surface-container-low shadow-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="photo_camera">photo_camera</span>
+</div>
+<div>
+<span class="font-body-md-bold text-body-md-bold text-on-surface block">Diagnose Crop</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">Instant AI Scan</span>
+</div>
+</button>
+<!-- Action 4: Ask Kisan AI -->
+<button class="bg-surface-container-lowest border border-outline-variant p-3.5 rounded-xl text-left flex flex-col justify-between min-h-[92px] active:scale-95 transition-transform duration-150 hover:bg-surface-container-low shadow-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary mb-2">
+<span class="material-symbols-outlined text-[24px]" data-icon="chat_bubble">chat_bubble</span>
+</div>
+<div>
+<span class="font-body-md-bold text-body-md-bold text-on-surface block">Ask Kisan AI</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block mt-0.5">Hindi / Bhojpuri voice</span>
+</div>
+</button>
+</div>
+</section>
+<!-- 3. TODAY'S URGENT FARMING ALERTS & RECOMMENDATIONS -->
+<section class="space-y-3 pt-1">
+<div class="flex items-center justify-between">
+<h2 class="font-title-sm text-title-sm text-on-surface flex items-center gap-1.5">
+<span>Today's Alerts &amp; Recommendations</span>
+</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 New</span>
+</div>
+<!-- Alert Card 1: Soil Moisture Warning (Sky Blue water icon) -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm relative">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex-shrink-0 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[24px]" data-icon="water_drop" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-tertiary font-semibold uppercase tracking-wider">Moisture Critical</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Now</span>
+</div>
+<h3 class="font-body-md-bold text-body-md-bold text-on-surface mt-0.5">Irrigation Recommended for Field 2 (Wheat)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Soil moisture dropped to <strong class="text-on-surface font-semibold">28%</strong>. Water 45 mins this evening before peak evaporation.
+              </p>
+<div class="mt-3 flex items-center gap-3">
+<button class="h-[48px] px-4 bg-tertiary text-on-tertiary rounded-xl font-body-md-bold text-body-md-bold flex items-center justify-center gap-1.5 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="check_circle">check_circle</span>
+<span>Log Irrigation</span>
+</button>
+<button class="h-[48px] px-3 bg-surface-container-low text-on-surface rounded-xl font-label-md text-label-md active:scale-95 transition-transform duration-150 border border-outline-variant">
+                  Remind Later
+                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Alert Card 2: Warm Amber warning -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 shadow-sm relative">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed flex-shrink-0 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]" data-icon="warning">warning</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-secondary font-semibold uppercase tracking-wider">Nutrient Scheduled</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">In 2 Days</span>
+</div>
+<h3 class="font-body-md-bold text-body-md-bold text-on-surface mt-0.5">Urea Top-Dress Due in 2 Days</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Field 1 Sugarcane entering tillering stage. Recommended dose: 45 kg/acre post-light watering.
+              </p>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- PERSISTENT BOTTOM NAVIGATION BAR (Shared Component mapped exactly) -->
+<!-- Docked full-width bottom with exactly 2 tabs: Dashboard (active) and Fields (inactive) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant shadow-md">
+<div class="w-full max-w-[390px] mx-auto h-16 flex justify-around items-center px-margin">
+<!-- Tab 1: Dashboard (ACTIVE) -->
+<button class="flex flex-col items-center justify-center text-primary font-body-md-bold text-body-md-bold min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[24px]" data-icon="eco" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="text-label-md font-label-md mt-0.5">Dashboard</span>
+</button>
+<!-- Tab 2: Fields (INACTIVE) -->
+<button class="flex flex-col items-center justify-center text-outline font-body-md text-body-md min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150 hover:text-primary">
+<span class="material-symbols-outlined text-[24px]" data-icon="grid_view">grid_view</span>
+<span class="text-label-md font-label-md mt-0.5">Fields</span>
+</button>
+</div>
+</nav>
+</div>
+</body></html>

@@ -23,7 +23,7 @@ def test_gate_is_in_a_sane_range():
 
 
 def test_gate_beats_chance_for_the_class_count():
-    # Uniform softmax over 4 classes is 0.25. A gate at or below chance would
+    # A uniform softmax gives 1/len(CLASSES). A gate at or below chance would
     # pass a model that had learned nothing at all.
     assert CONFIDENCE_GATE > 1.0 / len(CLASSES)
 
@@ -60,10 +60,12 @@ def test_probabilities_cover_every_declared_class():
 def test_gate_does_not_bound_out_of_distribution_error():
     """Documents a known, measured limitation.
 
-    Softmax over 4 classes has no "none of the above" output, so it normalises
-    whatever it is given into those 4. Measured with the shipped weights: a
-    photo of a whole paddy field returns brown_spot at 0.97, and a solid colour
-    image returns leaf_blast at ~1.00. Both clear the gate.
+    Softmax over the disease classes has no "none of the above" output, so it
+    normalises whatever it is given into those classes. Measured with the
+    previous 4-class weights: a photo of a whole paddy field returned
+    brown_spot at 0.97, and a solid colour image returned leaf_blast at ~1.00.
+    Both cleared the gate. The current model has not been re-measured, so
+    treat the limitation as still present.
 
     The gate bounds *low-confidence* error only. Closing the OOD case needs a
     rejection class or an OOD detector - see the README. This test exists so
@@ -74,3 +76,24 @@ def test_gate_does_not_bound_out_of_distribution_error():
         "if this ever fails, the gate has been raised above the measured OOD "
         "confidence - update the README's limitations section to match"
     )
+
+
+def test_weights_match_the_class_list():
+    """The head width in rice_model.pth must equal len(classes.json["classes"]).
+
+    The two files are produced together by one training run and must be
+    deployed together. A mismatch (new weights with an old classes.json, or
+    the reverse) would not crash inference if the sizes happened to agree - it
+    would silently attach the wrong disease names - so the shapes are checked
+    here. Skipped when the (gitignored) weights are not present.
+    """
+    import torch
+
+    from config import MODEL_PATH
+
+    if not MODEL_PATH.exists():
+        pytest.skip("weights not present")
+
+    state = torch.load(MODEL_PATH, map_location="cpu")
+    head = next(v for k, v in state.items() if k.endswith("classifier.1.weight"))
+    assert head.shape[0] == len(CLASSES)

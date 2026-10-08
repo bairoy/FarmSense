@@ -8,7 +8,8 @@ import {
   resolveImageUrl,
 } from "../images/r2.storage.ts";
 import { isR2Configured } from "../../config/env.ts";
-import { statusFromScore } from "../crop-state/timeline.engine.ts";
+import { ValidationError } from "../../utils/errors.ts";
+import { computeCropTimeline, statusFromScore } from "../crop-state/timeline.engine.ts";
 
 /**
  * Verifies the crop belongs to this user and returns what we need downstream.
@@ -20,7 +21,10 @@ import { statusFromScore } from "../crop-state/timeline.engine.ts";
 const assertCropOwned = async (db: Db, userId: string, cropId: string) => {
   const { data, error } = await db
     .from("crop_instances")
-    .select("id,crop_type,sowing_date,fields!inner(user_id)")
+    .select(
+      "id,crop_type,sowing_date,field_id," +
+        "fields!inner(id,user_id,latitude,longitude,boundary,area_sqm)"
+    )
     .eq("id", cropId)
     .eq("fields.user_id", userId)
     .maybeSingle();
@@ -29,7 +33,7 @@ const assertCropOwned = async (db: Db, userId: string, cropId: string) => {
     throw new Error("Crop not found or not owned by this user");
   }
 
-  return data;
+  return data as any;
 };
 
 /**
@@ -52,9 +56,36 @@ export const analyseCropImage = async (
   db: Db,
   userId: string,
   cropId: string,
-  file: { buffer: Buffer; originalname: string }
+  file: { buffer: Buffer; originalname: string },
+  /** Calendar date (YYYY-MM-DD) the photo was taken. Defaults to today. */
+  takenOn?: string,
+  /**
+   * UUID the mobile client generates once per queued photo. A photo taken
+   * offline is retried until it gets a response; without this, a retry after
+   * a dropped reply (upload succeeded, the phone never saw the 201) would
+   * re-run AI classification and write a second diagnosis. Checked before
+   * calling the classifier - the point is to skip the expensive call, not
+   * just avoid a duplicate row.
+   */
+  clientRequestId?: string
 ) => {
   const crop = await assertCropOwned(db, userId, cropId);
+  const photoDate = takenOn ?? new Date().toISOString().split("T")[0];
+
+  if (new Date(photoDate) < new Date(crop.sowing_date)) {
+    throw new ValidationError("The photo date is before this crop was sown");
+  }
+
+  if (clientRequestId) {
+    const { data: existing } = await db
+      .from("crop_images")
+      .select("*")
+      .eq("crop_instance_id", cropId)
+      .eq("client_request_id", clientRequestId)
+      .maybeSingle();
+
+    if (existing) return replayFromStoredImage(existing as any, photoDate);
+  }
 
   const prediction = await classifyCropImage(file.buffer, file.originalname);
   const treatment = getTreatment(prediction.disease, prediction.confidence);
@@ -73,8 +104,10 @@ export const analyseCropImage = async (
     }
   }
 
+  // Day number and state date come from when the photo was TAKEN, not when it
+  // was uploaded: the twin is compared against its own prediction for that day.
   const dayNumber =
-    differenceInDays(new Date(), new Date(crop.sowing_date)) + 1;
+    differenceInDays(new Date(photoDate), new Date(crop.sowing_date)) + 1;
 
   // A disease observation is a real, independent measurement of crop health -
   // the same class of thing as a satellite pass. It belongs in crop_states
@@ -97,7 +130,7 @@ export const analyseCropImage = async (
       // it is in. The GDD model owns growth stage.
       phase: "observed",
       // Date, not timestamp: the unique constraint is per calendar day.
-      recorded_date: new Date().toISOString().split("T")[0],
+      recorded_date: photoDate,
       source: "disease_model",
       confidence: prediction.confidence,
       health_score: healthScore,
@@ -105,7 +138,10 @@ export const analyseCropImage = async (
       // This is a direct sighting of disease on the plant, which is a much
       // stronger signal than the weather-derived risk proxy the rule engine
       // computes. Recorded at full strength when the classifier is confident.
-      disease_risk: diseased ? prediction.confidence : 0,
+      // Zero for a photo below the confidence gate. The engine only lets a
+      // diagnosis correct the twin when this is positive, so an uncertain
+      // classification can never move the simulation.
+      disease_risk: diseased && treatment.actionable ? prediction.confidence : 0,
       stress_factors: diseased
         ? [`${prediction.disease.replace(/_/g, " ")} identified from a crop photo`]
         : [],
@@ -135,20 +171,34 @@ export const analyseCropImage = async (
       : null,
     original_bytes: prediction.original_bytes,
     stored_bytes: prediction.stored_bytes,
+    client_request_id: clientRequestId ?? null,
   });
 
   if (imageError) {
     console.error("Failed to persist diagnosis record:", imageError);
   }
 
+  const twin_correction = await compareWithTwin(crop, photoDate, healthScore, {
+    diseased,
+    actionable: treatment.actionable,
+  });
+
   return {
     crop_instance_id: cropId,
     crop_state_id: state?.id ?? null,
+    taken_on: photoDate,
+    twin_correction,
     diagnosis: {
       disease: prediction.disease,
       confidence: prediction.confidence,
       margin: prediction.margin,
       probabilities: prediction.probabilities,
+      // A data URI the clients can drop straight into <img src>. Not persisted:
+      // it can be regenerated from the stored photo, so a replayed response
+      // carries null.
+      heatmap: prediction.heatmap_b64
+        ? `data:image/jpeg;base64,${prediction.heatmap_b64}`
+        : null,
     },
     // The gate result travels with the response so the UI cannot accidentally
     // render a treatment we decided not to stand behind.
@@ -167,6 +217,60 @@ export const analyseCropImage = async (
 };
 
 /**
+ * What the twin thought of the crop on the day the photo was taken, and whether
+ * the photo changed that.
+ *
+ * Runs the same simulation the dashboard uses, after the photo has been stored,
+ * so the answer reflects the correction the engine actually applied rather than
+ * a separate calculation that could disagree with it.
+ */
+const compareWithTwin = async (
+  crop: any,
+  photoDate: string,
+  observedHealth: number,
+  photo: { diseased: boolean; actionable: boolean }
+) => {
+  try {
+    const result = await computeCropTimeline(crop);
+    const day = result.timeline.find((d) => d.date === photoDate);
+    if (!day) return null;
+
+    const applied = result.correction.photo_observations.find(
+      (o) => o.date === photoDate
+    );
+
+    if (applied) {
+      return {
+        adjusted: true,
+        date: photoDate,
+        simulated_health: applied.simulated_health,
+        observed_health: observedHealth,
+        corrected_health: applied.corrected_health,
+        note: applied.note,
+      };
+    }
+
+    const note = !photo.actionable
+      ? "The classifier was not confident enough, so this photo did not change the crop estimate."
+      : photo.diseased
+        ? "The crop estimate for that day already showed similar stress, so it was left unchanged."
+        : "The photo shows no disease, which matches the crop estimate for that day. It does not rule out water stress, so nothing was changed.";
+
+    return {
+      adjusted: false,
+      date: photoDate,
+      simulated_health: Math.round(day.health_score),
+      observed_health: observedHealth,
+      corrected_health: Math.round(day.health_score),
+      note,
+    };
+  } catch (err) {
+    console.error("Twin comparison failed:", err);
+    return null;
+  }
+};
+
+/**
  * Maps a diagnosis onto the same 0-100 health scale the rule engine uses.
  *
  * Scaled by confidence so a hesitant "leaf_blast" does not slam the score to
@@ -181,6 +285,13 @@ const scoreFromDiagnosis = (prediction: {
     brown_spot: 60,
     hispa: 60,
     leaf_blast: 40,
+    // Provisional twin-tuning values for the classes added with the v2 model;
+    // like the treatment entries they have not been agronomically reviewed.
+    // Classes not listed (leaf_scald, leaf_smut, narrow_brown_spot) use the
+    // default below.
+    tungro: 40,
+    bacterial_leaf_blight: 45,
+    sheath_blight: 55,
   };
 
   const floor = severityFloor[prediction.disease] ?? 70;
@@ -190,6 +301,42 @@ const scoreFromDiagnosis = (prediction: {
   // the model is.
   return Math.round(100 - (100 - floor) * prediction.confidence);
 };
+
+/**
+ * Rebuilds a response for a photo that was already analysed under this
+ * `client_request_id`, instead of re-running the classifier.
+ *
+ * `crop_images` does not carry everything the original response had (the
+ * twin comparison and per-class probabilities are computed, not stored), so
+ * a replayed response is a strict subset - enough to confirm to the farmer
+ * that the photo was received and diagnosed, not a byte-for-byte replay.
+ */
+const replayFromStoredImage = (image: Record<string, any>, photoDate: string) => ({
+  crop_instance_id: image.crop_instance_id,
+  crop_state_id: image.crop_state_id,
+  taken_on: photoDate,
+  twin_correction: null,
+  diagnosis: {
+    disease: image.disease_class,
+    confidence: image.confidence,
+    margin: null,
+    probabilities: null,
+    heatmap: null,
+  },
+  actionable: image.treatment_recommended !== null,
+  treatment: image.treatment_recommended ? { label: image.treatment_recommended } : null,
+  image_url: image.image_url,
+  health_score: null,
+  compression: {
+    original_bytes: image.original_bytes,
+    stored_bytes: image.stored_bytes,
+    ratio:
+      image.stored_bytes > 0
+        ? Number((image.original_bytes / image.stored_bytes).toFixed(1))
+        : null,
+  },
+  replayed: true,
+});
 
 export const getCropImages = async (db: Db, userId: string, cropId: string) => {
   await assertCropOwned(db, userId, cropId);

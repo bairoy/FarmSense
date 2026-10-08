@@ -13,6 +13,13 @@ import { UNIT_KEYS, describeArea } from "../../utils/landUnits.ts";
 import { env } from "../../config/env.ts";
 
 /**
+ * Diseases that cap the health estimate harder when confirmed from a photo.
+ * Provisional for the classes added with the v2 model (tungro, bacterial leaf
+ * blight): they have not been agronomically reviewed.
+ */
+const SEVERE_DISEASES = new Set(["leaf_blast", "tungro", "bacterial_leaf_blight"]);
+
+/**
  * Normalize crop type to match rate tables and region configs.
  * E.g., "Basmati rice" -> "rice", "Winter wheat" -> "wheat"
  */
@@ -145,11 +152,11 @@ export const getFusedCropState = async (
   const extraFactors: string[] = [];
 
   if (diagnosis && diagnosis.days_ago <= 7 && diagnosis.actionable && diagnosis.disease !== "healthy") {
-    const cap = diagnosis.disease === "leaf_blast" ? 50 : 65;
+    const cap = SEVERE_DISEASES.has(diagnosis.disease) ? 50 : 65;
     if (health > cap) {
       health = cap;
       extraFactors.push(
-        `${diagnosis.disease.replace("_", " ")} confirmed from a photo ${diagnosis.days_ago} day(s) ago; the health estimate is capped accordingly.`
+        `${diagnosis.disease.replace(/_/g, " ")} confirmed from a photo ${diagnosis.days_ago} day(s) ago; the health estimate is capped accordingly.`
       );
     }
   }

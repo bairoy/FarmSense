@@ -1,79 +1,118 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api } from "../../../services/api"
-import { apiErrorMessage } from "../../../services/apiError";
+import { Eye, EyeOff } from "lucide-react";
 
+import { api } from "../../../services/api";
+import { apiErrorMessage } from "../../../services/apiError";
+import { Alert, Button, TextField } from "../../../components/ui";
+import { AuthLayout } from "../components/AuthLayout";
+
+const MIN_PASSWORD = 8;
 
 export default function Register() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    // Checked here so a too-short password is caught before a round trip on a
+    // connection that may take ten seconds to answer.
+    if (form.password.length < MIN_PASSWORD) {
+      setError(`Choose a password of at least ${MIN_PASSWORD} characters.`);
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
       await api.post("/auth/signup", form);
-
-      alert("Account created successfully");
-      navigate("/login");
-    } catch (error) {
-      alert(apiErrorMessage(error, "Signup failed"));
+      navigate("/login", {
+        replace: true,
+        state: { justRegistered: true },
+      });
+    } catch (err) {
+      setError(apiErrorMessage(err, "Could not create your account. Please try again."));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-green-50">
-      <div className="bg-white p-8 rounded shadow w-96">
-        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            name="name"
-            placeholder="Full Name"
-            className="w-full border p-3 rounded"
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            className="w-full border p-3 rounded"
-            onChange={handleChange}
-            required
-          />
-
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            className="w-full border p-3 rounded"
-            onChange={handleChange}
-            required
-          />
-
-          <button className="w-full bg-green-600 text-white p-3 rounded">
-            Register
-          </button>
-        </form>
-
-        <p className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link to="/login" className="text-green-600">
-            Login
+    <AuthLayout
+      title="Create your account"
+      subtitle="Add your fields once, then get water and fertilizer guidance every week."
+      footer={
+        <>
+          Already registered?{" "}
+          <Link
+            to="/login"
+            className="font-semibold text-field-700 underline underline-offset-2 hover:text-field-800"
+          >
+            Sign in
           </Link>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {error && <Alert tone="error">{error}</Alert>}
+
+        <TextField
+          label="Your name"
+          name="name"
+          autoComplete="name"
+          placeholder="Ram Prasad Yadav"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+
+        <TextField
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+
+        <div className="relative">
+          <TextField
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            hint={`At least ${MIN_PASSWORD} characters.`}
+            className="pr-12"
+            value={form.password}
+            onChange={handleChange}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((shown) => !shown)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-1 top-8 flex h-11 w-11 items-center justify-center rounded-lg text-clay-500 hover:text-clay-800"
+          >
+            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+          </button>
+        </div>
+
+        <Button type="submit" size="lg" block disabled={submitting}>
+          {submitting ? "Creating account..." : "Create account"}
+        </Button>
+      </form>
+    </AuthLayout>
   );
 }

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       crop_images: {
         Row: {
+          client_request_id: string | null
           confidence: number | null
           crop_instance_id: string | null
           crop_state_id: string | null
@@ -30,6 +31,7 @@ export type Database = {
           uploaded_at: string | null
         }
         Insert: {
+          client_request_id?: string | null
           confidence?: number | null
           crop_instance_id?: string | null
           crop_state_id?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           uploaded_at?: string | null
         }
         Update: {
+          client_request_id?: string | null
           confidence?: number | null
           crop_instance_id?: string | null
           crop_state_id?: string | null
@@ -227,6 +230,7 @@ export type Database = {
       fertilizer_actions: {
         Row: {
           action_date: string
+          client_request_id: string | null
           created_at: string | null
           crop_instance_id: string | null
           fertilizer_type: string
@@ -235,6 +239,7 @@ export type Database = {
         }
         Insert: {
           action_date: string
+          client_request_id?: string | null
           created_at?: string | null
           crop_instance_id?: string | null
           fertilizer_type: string
@@ -243,6 +248,7 @@ export type Database = {
         }
         Update: {
           action_date?: string
+          client_request_id?: string | null
           created_at?: string | null
           crop_instance_id?: string | null
           fertilizer_type?: string
@@ -305,6 +311,7 @@ export type Database = {
         Row: {
           action_date: string
           amount: number
+          client_request_id: string | null
           created_at: string | null
           crop_instance_id: string | null
           id: string
@@ -312,6 +319,7 @@ export type Database = {
         Insert: {
           action_date: string
           amount: number
+          client_request_id?: string | null
           created_at?: string | null
           crop_instance_id?: string | null
           id?: string
@@ -319,6 +327,7 @@ export type Database = {
         Update: {
           action_date?: string
           amount?: number
+          client_request_id?: string | null
           created_at?: string | null
           crop_instance_id?: string | null
           id?: string

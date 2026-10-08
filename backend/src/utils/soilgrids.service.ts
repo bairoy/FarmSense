@@ -45,8 +45,17 @@ const PROPERTIES = ["wv0033", "wv1500", "clay", "sand", "silt", "bdod"];
 const DEPTHS = ["0-5cm", "5-15cm", "15-30cm"];
 
 // Soil does not change. Caching in-process avoids hammering a free public API
-// on every timeline recompute; a restart is a fine cache lifetime.
+// on every timeline recompute; a restart is a fine cache lifetime for a
+// successful lookup.
 const cache = new Map<string, SoilProfile>();
+
+// SoilGrids has been unreliable from this host (timeouts and malformed
+// responses) - without this, every request for a field it's currently
+// failing for re-pays the full timeout below, which is what made crop
+// pages slow. A failure is cached for a short TTL so the request path stays
+// fast while still retrying periodically in case the upstream recovers.
+const failureCache = new Map<string, number>();
+const FAILURE_TTL_MS = 30 * 60 * 1000;
 
 const cacheKey = (lat: number, lon: number) =>
   `${lat.toFixed(3)},${lon.toFixed(3)}`;
@@ -99,6 +108,17 @@ export const getSoilProfile = async (
   const cached = cache.get(key);
   if (cached) return cached;
 
+  const failedAt = failureCache.get(key);
+  if (failedAt != null && Date.now() - failedAt < FAILURE_TTL_MS) {
+    return {
+      source: "region_default",
+      fieldCapacity: 0.3,
+      wiltingPoint: 0.15,
+      tawMmPerM: fallback.total_available_water_mm_per_m,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
   const params = new URLSearchParams({
     lat: String(latitude),
     lon: String(longitude),
@@ -109,7 +129,11 @@ export const getSoilProfile = async (
 
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12_000);
+    // Short timeout: this call sits on the user-facing crop-page request path
+    // (see timeline.engine.ts's Promise.all), and a region-default fallback
+    // is a perfectly usable result - it's not worth making a farmer wait
+    // seconds longer for field-level precision SoilGrids may not even deliver.
+    const timer = setTimeout(() => controller.abort(), 3_500);
 
     const response = await fetch(`${SOILGRIDS_URL}?${params}`, {
       signal: controller.signal,
@@ -164,6 +188,7 @@ export const getSoilProfile = async (
     console.warn(
       `SoilGrids unavailable (${(err as Error).message}); using region defaults.`
     );
+    failureCache.set(key, Date.now());
 
     // Degrading to district-level constants is acceptable; silently pretending
     // we have field-level soil data would not be. The `source` field travels

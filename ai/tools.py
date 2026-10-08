@@ -291,6 +291,15 @@ def analyze_crop_image(crop_id: str, image_bytes: bytes, filename: str, token: s
         lines.append(
             f"  Do not harvest within {chemical['preharvest_interval_days']} days of spraying."
         )
+    elif diagnosis["disease"] != "healthy":
+        # A disease with no chemical on record (classes added with the v2 model
+        # have no reviewed treatment yet). Say so explicitly, or the model fills
+        # the gap with a dose from its own memory.
+        lines.append(
+            "\nNo chemical treatment is on record for this disease. Do not suggest "
+            "any chemical, dose or spray timing; refer the farmer to the local "
+            "agriculture extension officer."
+        )
 
     lines.append("\nField practice:")
     for practice in treatment.get("cultural_practice", []):

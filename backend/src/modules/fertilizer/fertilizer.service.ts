@@ -1,4 +1,5 @@
 import type { Db } from "../../config/supabase.ts";
+import { insertIdempotent } from "../../utils/idempotentInsert.ts";
 
 export const createFertilizer = async (
   db: Db,
@@ -8,6 +9,7 @@ export const createFertilizer = async (
     fertilizer_type: string;
     quantity: number;
     action_date?: string;
+    client_request_id?: string;
   }
 ) => {
   const { data: crop, error: cropError } = await db
@@ -27,19 +29,13 @@ export const createFertilizer = async (
     payload.action_date ? new Date(payload.action_date) : new Date()
   ).toISOString();
 
-  const { data, error } = await db
-    .from("fertilizer_actions")
-    .insert({
-      crop_instance_id: payload.crop_instance_id,
-      fertilizer_type: payload.fertilizer_type,
-      quantity: payload.quantity,
-      action_date: actionDate,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+  return insertIdempotent(db, "fertilizer_actions", {
+    crop_instance_id: payload.crop_instance_id,
+    fertilizer_type: payload.fertilizer_type,
+    quantity: payload.quantity,
+    action_date: actionDate,
+    client_request_id: payload.client_request_id ?? null,
+  });
 };
 
 export const getFertilizerByCrop = async (

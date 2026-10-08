@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=390, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>FarmSense - Crop Detail &amp; AI Guidance</title>
+<!-- Material Symbols Outlined Font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#001d31",
+            "primary-fixed": "#b1f2b4",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#dfecdf",
+            "primary-fixed-dim": "#96d69a",
+            "error-container": "#ffdad6",
+            "surface-container-low": "#eaf7ea",
+            "on-tertiary-fixed-variant": "#004b73",
+            "inverse-surface": "#28332a",
+            "secondary-fixed": "#c0eec0",
+            "inverse-on-surface": "#e7f4e7",
+            "on-error-container": "#93000a",
+            "tertiary-fixed-dim": "#93ccff",
+            "tertiary-fixed": "#cce5ff",
+            "secondary": "#3f6743",
+            "surface-container-highest": "#d9e6d9",
+            "on-primary-fixed-variant": "#135224",
+            "on-secondary-container": "#436c47",
+            "inverse-primary": "#96d69a",
+            "outline": "#71796f",
+            "surface": "#f0fdf0",
+            "on-secondary-fixed-variant": "#274f2d",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#002108",
+            "on-error": "#ffffff",
+            "primary-container": "#2f6b3a",
+            "surface-variant": "#d9e6d9",
+            "secondary-container": "#bdebbd",
+            "surface-bright": "#f0fdf0",
+            "on-primary-container": "#a8e9ac",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#bbddff",
+            "surface-tint": "#2e6a39",
+            "tertiary": "#004b74",
+            "on-surface-variant": "#414940",
+            "on-background": "#131e16",
+            "secondary-fixed-dim": "#a5d2a5",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#006499",
+            "surface-dim": "#d0ddd1",
+            "on-secondary-fixed": "#002108",
+            "background": "#f0fdf0",
+            "primary": "#145224",
+            "on-surface": "#131e16",
+            "surface-container": "#e4f1e4",
+            "outline-variant": "#c0c9bd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.75rem",
+            "space-md": "1rem",
+            "space-xs": "0.375rem"
+          },
+          "fontFamily": {
+            "headline-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "metric-display": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-xl-mobile": ["Inter"],
+            "headline-xl": ["Inter"],
+            "body-md": ["Inter"],
+            "body-md-bold": ["Inter"],
+            "title-sm": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg": ["26px", {"lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-lg": ["17px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "metric-display": ["34px", {"lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700"}],
+            "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "500"}],
+            "label-md": ["14px", {"lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+            "headline-xl-mobile": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-xl": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "body-md-bold": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "title-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    body {
+      -webkit-font-smoothing: antialiased;
+      background-color: #F7F9F6;
+    }
+  </style>
+</head>
+<body class="text-on-surface antialiased flex justify-center selection:bg-secondary-container">
+<!-- Mobile Canvas Frame (390px strict visual envelope) -->
+<div class="w-full max-w-[390px] min-h-screen bg-[#F7F9F6] relative flex flex-col pb-24 border-x border-[#E2E8E2]">
+<!-- 1. Top Bar / Sub-Navigation Bar -->
+<header class="sticky top-0 z-40 bg-surface-container-lowest/95 backdrop-blur-md px-margin h-16 border-b border-[#E2E8E2] flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-2">
+<a aria-label="Back to Field 2" class="min-w-[48px] min-h-[48px] flex items-center justify-center -ml-2 text-primary active:scale-95 transition-transform duration-150 rounded-lg hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-primary text-[24px]">arrow_back</span>
+</a>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline font-medium tracking-tight">Field #2</span>
+<h1 class="font-title-sm text-title-sm text-on-surface font-semibold tracking-tight leading-none">Rabi Wheat - HD 2967</h1>
+</div>
+</div>
+<!-- Synced Status Pill -->
+<div class="h-8 min-h-[32px] px-3 bg-[#DCFCE7] border border-[#BBF7D0] rounded-full flex items-center gap-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[#16A34A] text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-md text-label-md text-[#16A34A] font-semibold">Synced</span>
+</div>
+</header>
+<!-- Main Content Container -->
+<main class="px-margin pt-4 flex flex-col gap-4">
+<!-- 2. Health Score Hero Badge Card -->
+<section class="bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] p-5 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)]">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-outline font-semibold tracking-wide uppercase">Crop Health Status</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Sensors Active</span>
+</div>
+<div class="mt-4 flex items-center gap-4">
+<!-- Circular Score Dial -->
+<div class="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<!-- Background circle -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#E2E8E2" stroke-width="8"></circle>
+<!-- Progress Arc 82% -->
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#2F6B3A" stroke-dasharray="251.2" stroke-dashoffset="45.2" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="font-metric-display text-[30px] font-bold text-on-surface leading-none">82</span>
+<span class="font-label-sm text-label-sm text-outline font-semibold -mt-0.5">/ 100</span>
+</div>
+</div>
+<!-- Metadata & Diagnostics -->
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<h2 class="font-title-sm text-title-sm text-on-surface font-bold leading-snug">Optimal Canopy Growth</h2>
+<!-- Warm Amber Tag for Soil Moisture Alert -->
+<div class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#FEF3C7] border border-[#FDE68A] rounded-lg w-fit">
+<span class="material-symbols-outlined text-[#D97706] text-[16px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-sm text-label-sm text-[#B45309] font-semibold truncate">Mild Moisture Stress in Plot B</span>
+</div>
+<!-- Crop Stage Pill -->
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-outline text-[14px]">calendar_today</span>
+<span>Day 38 • Crown Root Initiation (CRI)</span>
+</p>
+</div>
+</div>
+<!-- Subtle Hairline Metric Bar -->
+<div class="mt-5 pt-3.5 border-t border-[#E2E8E2] grid grid-cols-3 gap-2 text-center">
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Soil Moisture</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">28.4%</span>
+</div>
+<div class="border-x border-[#E2E8E2]">
+<span class="font-label-sm text-label-sm text-outline block">Canopy Temp</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">24.2°C</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block">NDVI Index</span>
+<span class="font-label-md text-label-md text-[#16A34A] font-bold">0.78 (Good)</span>
+</div>
+</div>
+</section>
+<!-- 3. AI Recommendations (Radical Sunlight Clarity) -->
+<section class="flex flex-col gap-3">
+<div class="flex items-center justify-between px-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-label-md text-label-md text-on-surface font-bold tracking-tight">AI Agronomist Directives</h3>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Real-time Model</span>
+</div>
+<!-- Card 1: Critical Irrigation Notice -->
+<article class="bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] border-l-4 border-l-[#0284C7]">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-[#E0F2FE] border border-[#BAE6FD] flex items-center justify-center flex-shrink-0 text-[#0284C7]">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h4 class="font-title-sm text-title-sm text-on-surface font-bold">Irrigation Required Today</h4>
+<span class="px-2 py-0.5 rounded bg-[#E0F2FE] text-[#0369A1] font-label-sm text-label-sm font-semibold">Priority</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1.5 leading-relaxed text-[15px]">
+                Apply <strong>45mm light irrigation</strong> before tomorrow 11 AM. Hot dry westerly winds predicted for Gorakhpur district.
+              </p>
+</div>
+</div>
+<!-- Tactile Primary CTA Button (52px height) -->
+<button class="mt-3.5 w-full h-[52px] min-h-[48px] bg-primary hover:bg-[#1D4524] active:bg-[#1D4524] text-white rounded-xl font-body-md-bold text-body-md-bold flex items-center justify-center gap-2 shadow-sm transition-all duration-150 active:scale-[0.98]">
+<span class="material-symbols-outlined text-[20px]">check_circle</span>
+<span>Confirm &amp; Log Irrigation</span>
+</button>
+</article>
+<!-- Card 2: Fertilizer Guidance Notice -->
+<article class="bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] border-l-4 border-l-[#16A34A]">
+<div class="flex items-start gap-3">
+<div class="w-10 h-10 rounded-xl bg-[#DCFCE7] border border-[#BBF7D0] flex items-center justify-center flex-shrink-0 text-[#16A34A]">
+<span class="material-symbols-outlined text-[24px]">science</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h4 class="font-title-sm text-title-sm text-on-surface font-bold">Fertilizer Guidance</h4>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-secondary font-label-sm text-label-sm font-semibold">Scheduled</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1.5 leading-relaxed text-[15px]">
+                Top dress with <strong>Urea (40 kg/acre) + Zinc Sulphate</strong> 2 days after irrigation when soil is damp.
+              </p>
+</div>
+</div>
+</article>
+</section>
+<!-- 4. 2x2 Core Action Grid (Large Accessible Tap Targets) -->
+<section class="mt-1">
+<h3 class="font-label-md text-label-md text-on-surface font-bold tracking-tight mb-2.5 px-0.5">Field Management Actions</h3>
+<div class="grid grid-cols-2 gap-3">
+<!-- Tile 1: Irrigation Log -->
+<button class="min-h-[104px] p-3.5 bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] text-left flex flex-col justify-between active:scale-95 transition-transform duration-150 hover:border-outline shadow-[0_1px_3px_0_rgba(23,34,26,0.05)]">
+<div class="w-10 h-10 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">water_drop</span>
+</div>
+<div class="mt-2">
+<span class="font-body-md-bold text-body-md-bold text-on-surface block leading-tight">Irrigation Log</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5 block truncate">Last 12 days ago</span>
+</div>
+</button>
+<!-- Tile 2: Fertilizer Log -->
+<button class="min-h-[104px] p-3.5 bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] text-left flex flex-col justify-between active:scale-95 transition-transform duration-150 hover:border-outline shadow-[0_1px_3px_0_rgba(23,34,26,0.05)]">
+<div class="w-10 h-10 rounded-xl bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">science</span>
+</div>
+<div class="mt-2">
+<span class="font-body-md-bold text-body-md-bold text-on-surface block leading-tight">Fertilizer Log</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5 block truncate">1 entry recorded</span>
+</div>
+</button>
+<!-- Tile 3: Diagnose Photo -->
+<button class="min-h-[104px] p-3.5 bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] text-left flex flex-col justify-between active:scale-95 transition-transform duration-150 hover:border-outline shadow-[0_1px_3px_0_rgba(23,34,26,0.05)]">
+<div class="w-10 h-10 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">photo_camera</span>
+</div>
+<div class="mt-2">
+<span class="font-body-md-bold text-body-md-bold text-on-surface block leading-tight">Diagnose Photo</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5 block truncate">Scan leaf for rust</span>
+</div>
+</button>
+<!-- Tile 4: Ask Assistant -->
+<button class="min-h-[104px] p-3.5 bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] text-left flex flex-col justify-between active:scale-95 transition-transform duration-150 hover:border-outline shadow-[0_1px_3px_0_rgba(23,34,26,0.05)]">
+<div class="w-10 h-10 rounded-xl bg-primary-fixed text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[22px]">chat_bubble</span>
+</div>
+<div class="mt-2">
+<span class="font-body-md-bold text-body-md-bold text-on-surface block leading-tight">Ask Assistant</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold mt-0.5 block truncate">AI Crop Doctor</span>
+</div>
+</button>
+</div>
+</section>
+<!-- 5. Recent Logs Timeline Preview -->
+<section class="bg-surface-container-lowest rounded-[16px] border border-[#E2E8E2] p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] mb-2">
+<div class="flex items-center justify-between mb-3 border-b border-[#E2E8E2] pb-2.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[18px]">history</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">Activity Snippet</span>
+</div>
+<a class="font-label-md text-label-md text-primary font-semibold flex items-center gap-0.5 hover:underline" href="#">
+<span>View Full History</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+<div class="space-y-3 relative pl-4 border-l-2 border-surface-container-high ml-2">
+<!-- Timeline Item 1 -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-primary border-2 border-white"></div>
+<div class="flex items-baseline justify-between">
+<span class="font-body-md-bold text-body-md-bold text-on-surface text-[14px]">Basal NPK Dosing</span>
+<span class="font-label-sm text-label-sm text-outline">Day 21</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Applied 50kg DAP + 20kg MOP prior to germination.</p>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-secondary border-2 border-white"></div>
+<div class="flex items-baseline justify-between">
+<span class="font-body-md-bold text-body-md-bold text-on-surface text-[14px]">Sowing Completed</span>
+<span class="font-label-sm text-label-sm text-outline">Day 0</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Certified seed HD 2967 drill-sown at 40kg/acre.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- 6. Persistent Bottom Navigation Bar (Execution from JSON: 2 Tabs strictly) -->
+<!-- Using mapped style tokens from JSON: Dashboard & Fields -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-margin pb-safe max-w-md mx-auto bg-surface-container-lowest border-t border-outline-variant shadow-md">
+<!-- Inactive: Dashboard -->
+<a class="flex flex-col items-center justify-center text-outline font-body-md text-body-md min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150 hover:text-primary" href="#">
+<span class="material-symbols-outlined text-[24px]">eco</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<!-- Active: Fields (Since this is a Crop Detail & Field Guidance Screen) -->
+<a class="flex flex-col items-center justify-center text-primary font-body-md-bold text-body-md-bold min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-label-md text-label-md">Fields</span>
+</a>
+</nav>
+</div>
+</body></html>

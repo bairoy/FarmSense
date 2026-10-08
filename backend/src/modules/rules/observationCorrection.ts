@@ -66,6 +66,15 @@ export type ObservationCorrection = {
   /** How much the answer pins the value down, 0-1. */
   confidence?: number;
 
+  /**
+   * Where the observation came from. A photo is an instrument reading, not a
+   * person's statement, so it is worded differently and is only acted on when
+   * it disagrees with the simulation by more than its own noise.
+   */
+  origin?: "photo";
+  /** Ignore the bound unless it differs from the simulation by more than this (health points). */
+  min_discrepancy?: number;
+
   note?: string;
 };
 
@@ -201,9 +210,16 @@ export const applyHealthBounds = (
   let value = score;
   let reason: string | null = null;
 
-  if (ceiling !== undefined && value > ceiling) {
+  if (
+    ceiling !== undefined &&
+    value > ceiling &&
+    value - ceiling > (correction.min_discrepancy ?? 0)
+  ) {
     value = blendToward(value, ceiling, pull(correction));
-    reason = `Farmer reports visible stress the weather-driven model did not predict; health capped from ${score.toFixed(0)}.`;
+    reason =
+      correction.origin === "photo"
+        ? `A dated crop photo shows disease the weather-driven model did not predict; health lowered from ${score.toFixed(0)} to ${value.toFixed(0)}.`
+        : `Farmer reports visible stress the weather-driven model did not predict; health capped from ${score.toFixed(0)}.`;
   }
 
   if (floor !== undefined && value < floor) {

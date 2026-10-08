@@ -1,0 +1,102 @@
+[
+  {
+    "file": "rice1.jpeg",
+    "disease": "leaf_blast",
+    "confidence": 0.6001,
+    "margin": 0.4225,
+    "top3": [
+      [
+        "leaf_blast",
+        0.6001
+      ],
+      [
+        "bacterial_leaf_blight",
+        0.1776
+      ],
+      [
+        "brown_spot",
+        0.0696
+      ]
+    ]
+  },
+  {
+    "file": "rice2.jpeg",
+    "disease": "brown_spot",
+    "confidence": 0.7699,
+    "margin": 0.696,
+    "top3": [
+      [
+        "brown_spot",
+        0.7699
+      ],
+      [
+        "hispa",
+        0.0739
+      ],
+      [
+        "leaf_blast",
+        0.0409
+      ]
+    ]
+  },
+  {
+    "file": "rice3.jpeg",
+    "disease": "sheath_blight",
+    "confidence": 0.9308,
+    "margin": 0.9188,
+    "top3": [
+      [
+        "sheath_blight",
+        0.9308
+      ],
+      [
+        "healthy",
+        0.012
+      ],
+      [
+        "leaf_smut",
+        0.0109
+      ]
+    ]
+  },
+  {
+    "file": "rice4.jpeg",
+    "disease": "bacterial_leaf_blight",
+    "confidence": 0.3283,
+    "margin": 0.1469,
+    "top3": [
+      [
+        "bacterial_leaf_blight",
+        0.3283
+      ],
+      [
+        "leaf_blast",
+        0.1814
+      ],
+      [
+        "tungro",
+        0.1659
+      ]
+    ]
+  },
+  {
+    "file": "rice5.jpeg",
+    "disease": "healthy",
+    "confidence": 0.8862,
+    "margin": 0.8643,
+    "top3": [
+      [
+        "healthy",
+        0.8862
+      ],
+      [
+        "hispa",
+        0.0219
+      ],
+      [
+        "narrow_brown_spot",
+        0.0147
+      ]
+    ]
+  }
+]

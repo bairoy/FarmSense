@@ -3,40 +3,51 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadBucketCommand,
+  CreateBucketCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "node:crypto";
-import { env, isR2Configured } from "../../config/env.ts";
+import { env, isStorageConfigured, storageEndpoint } from "../../config/env.ts";
 
 /**
- * Cloudflare R2 object storage.
+ * Object storage for crop photographs, over the S3 API.
  *
- * Why R2 and not Supabase Storage or Postgres bytea:
+ * Why not Supabase Storage or Postgres bytea:
  *   - Postgres bytea burns the 500MB free database quota on binary data that
  *     is never queried, only served.
  *   - Supabase Storage's free tier caps egress at 5GB/month. A crop-history
  *     screen re-displays the same photos every visit, so egress - not storage
  *     - is the quota that actually bites.
- *   - R2 charges zero egress at any volume. That is the whole reason it wins
- *     here; the 10GB free storage is a bonus.
  *
- * R2 speaks the S3 API, so the standard AWS SDK works unmodified.
+ * Two backends, one API:
+ *
+ *   - **MinIO**, for local development and for deployments without a cloud
+ *     account. Runs from docker-compose, stores on local disk, costs nothing.
+ *   - **Cloudflare R2**, for production. Zero egress at any volume, which is
+ *     the property that matters here; the 10GB free storage is a bonus.
+ *
+ * Both speak S3, so the AWS SDK covers both and the only difference is the
+ * endpoint and address style. Nothing below this line is vendor-specific.
  */
 
 let client: S3Client | null = null;
 
 const getClient = (): S3Client => {
-  if (!isR2Configured()) {
+  if (!isStorageConfigured()) {
     throw new Error(
-      "R2 is not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY."
+      "Object storage is not configured. Set S3_ENDPOINT (MinIO) or R2_ACCOUNT_ID (Cloudflare R2), " +
+        "plus R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY."
     );
   }
 
   if (!client) {
     client = new S3Client({
-      // R2 has no regions, but the SDK insists on one. "auto" is R2's answer.
-      region: "auto",
-      endpoint: `https://${env.r2AccountId}.r2.cloudflarestorage.com`,
+      // R2 has no regions and MinIO ignores them, but the SDK insists on one.
+      // "auto" is R2's answer and MinIO accepts anything.
+      region: process.env.S3_REGION ?? "auto",
+      endpoint: storageEndpoint(),
+      forcePathStyle: env.s3ForcePathStyle,
       credentials: {
         accessKeyId: env.r2AccessKeyId,
         secretAccessKey: env.r2SecretAccessKey,
@@ -45,6 +56,62 @@ const getClient = (): S3Client => {
   }
 
   return client;
+};
+
+/**
+ * Client used only to sign browser-facing URLs. A presigned URL embeds its
+ * host in the signature, so it has to be signed for the host the browser will
+ * actually call, not the one the backend uses internally.
+ */
+let signingClient: S3Client | null = null;
+
+const getSigningClient = (): S3Client => {
+  if (!env.s3PublicEndpoint) return getClient();
+
+  if (!signingClient) {
+    signingClient = new S3Client({
+      region: process.env.S3_REGION ?? "auto",
+      endpoint: env.s3PublicEndpoint,
+      forcePathStyle: env.s3ForcePathStyle,
+      credentials: {
+        accessKeyId: env.r2AccessKeyId,
+        secretAccessKey: env.r2SecretAccessKey,
+      },
+    });
+  }
+
+  return signingClient;
+};
+
+/**
+ * Creates the bucket if it is missing.
+ *
+ * R2 buckets are made once in a dashboard and persist. A MinIO container
+ * started from a fresh volume has none, and a first upload would fail with
+ * NoSuchBucket - a confusing way to learn that storage is working fine and
+ * merely empty. Idempotent, and only ever called on the upload path.
+ */
+let bucketReady = false;
+
+const ensureBucket = async (): Promise<void> => {
+  if (bucketReady) return;
+
+  const s3 = getClient();
+  try {
+    await s3.send(new HeadBucketCommand({ Bucket: env.r2Bucket }));
+  } catch {
+    try {
+      await s3.send(new CreateBucketCommand({ Bucket: env.r2Bucket }));
+      console.log(`Created object storage bucket "${env.r2Bucket}".`);
+    } catch (err: any) {
+      // A parallel request may have won the race; that is success, not failure.
+      if (!/BucketAlreadyOwnedByYou|BucketAlreadyExists/.test(err?.name ?? "")) {
+        throw err;
+      }
+    }
+  }
+
+  bucketReady = true;
 };
 
 /**
@@ -67,6 +134,7 @@ export const uploadImage = async (
   body: Buffer,
   contentType = "image/jpeg"
 ): Promise<string> => {
+  await ensureBucket();
   await getClient().send(
     new PutObjectCommand({
       Bucket: env.r2Bucket,
@@ -102,7 +170,7 @@ export const resolveImageUrl = async (key: string): Promise<string> => {
   }
 
   return getSignedUrl(
-    getClient(),
+    getSigningClient(),
     new GetObjectCommand({ Bucket: env.r2Bucket, Key: key }),
     { expiresIn: 3600 }
   );

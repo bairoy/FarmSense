@@ -13,6 +13,11 @@ export type DiseasePrediction = {
   stored_bytes: number;
   /** The compressed JPEG the AI service produced, ready to persist. */
   image: Buffer;
+  /**
+   * Grad-CAM++ overlay (JPEG, base64): where in the photo the evidence for the
+   * predicted class came from. Shown to the farmer, never stored.
+   */
+  heatmap_b64: string | null;
 };
 
 /**
@@ -37,7 +42,7 @@ export const classifyCropImage = async (
   form.append("file", buffer, filename);
 
   const { data } = await axios.post(
-    `${env.aiServiceUrl}/detect-disease`,
+    `${env.aiServiceUrl}/detect-disease?heatmap=true`,
     form,
     {
       headers: {
@@ -52,11 +57,12 @@ export const classifyCropImage = async (
     }
   );
 
-  const { image_b64, ...prediction } = data;
+  const { image_b64, heatmap_b64, ...prediction } = data;
 
   return {
     ...prediction,
     image: Buffer.from(image_b64, "base64"),
+    heatmap_b64: heatmap_b64 ?? null,
   };
 };
 

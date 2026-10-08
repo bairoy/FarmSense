@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FarmSense - Fields</title>
+<!-- Material Symbols Outlined font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration Script verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#001d31",
+            "primary-fixed": "#b1f2b4",
+            "on-primary": "#ffffff",
+            "surface-container-high": "#dfecdf",
+            "primary-fixed-dim": "#96d69a",
+            "error-container": "#ffdad6",
+            "surface-container-low": "#eaf7ea",
+            "on-tertiary-fixed-variant": "#004b73",
+            "inverse-surface": "#28332a",
+            "secondary-fixed": "#c0eec0",
+            "inverse-on-surface": "#e7f4e7",
+            "on-error-container": "#93000a",
+            "tertiary-fixed-dim": "#93ccff",
+            "tertiary-fixed": "#cce5ff",
+            "secondary": "#3f6743",
+            "surface-container-highest": "#d9e6d9",
+            "on-primary-fixed-variant": "#135224",
+            "on-secondary-container": "#436c47",
+            "inverse-primary": "#96d69a",
+            "outline": "#71796f",
+            "surface": "#f0fdf0",
+            "on-secondary-fixed-variant": "#274f2d",
+            "error": "#ba1a1a",
+            "on-primary-fixed": "#002108",
+            "on-error": "#ffffff",
+            "primary-container": "#2f6b3a",
+            "surface-variant": "#d9e6d9",
+            "secondary-container": "#bdebbd",
+            "surface-bright": "#f0fdf0",
+            "on-primary-container": "#a8e9ac",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#bbddff",
+            "surface-tint": "#2e6a39",
+            "tertiary": "#004b74",
+            "on-surface-variant": "#414940",
+            "on-background": "#131e16",
+            "secondary-fixed-dim": "#a5d2a5",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "tertiary-container": "#006499",
+            "surface-dim": "#d0ddd1",
+            "on-secondary-fixed": "#002108",
+            "background": "#f0fdf0",
+            "primary": "#145224",
+            "on-surface": "#131e16",
+            "surface-container": "#e4f1e4",
+            "outline-variant": "#c0c9bd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.75rem",
+            "space-md": "1rem",
+            "space-xs": "0.375rem"
+          },
+          "fontFamily": {
+            "headline-lg": [
+              "Inter"
+            ],
+            "headline-md": [
+              "Inter"
+            ],
+            "body-lg": [
+              "Inter"
+            ],
+            "metric-display": [
+              "Inter"
+            ],
+            "label-sm": [
+              "Inter"
+            ],
+            "label-md": [
+              "Inter"
+            ],
+            "headline-xl-mobile": [
+              "Inter"
+            ],
+            "headline-xl": [
+              "Inter"
+            ],
+            "body-md": [
+              "Inter"
+            ],
+            "body-md-bold": [
+              "Inter"
+            ],
+            "title-sm": [
+              "Inter"
+            ]
+          },
+          "fontSize": {
+            "headline-lg": [
+              "26px",
+              {
+                "lineHeight": "32px",
+                "letterSpacing": "-0.015em",
+                "fontWeight": "700"
+              }
+            ],
+            "headline-md": [
+              "22px",
+              {
+                "lineHeight": "28px",
+                "letterSpacing": "-0.01em",
+                "fontWeight": "600"
+              }
+            ],
+            "body-lg": [
+              "17px",
+              {
+                "lineHeight": "24px",
+                "letterSpacing": "0em",
+                "fontWeight": "400"
+              }
+            ],
+            "metric-display": [
+              "34px",
+              {
+                "lineHeight": "40px",
+                "letterSpacing": "-0.03em",
+                "fontWeight": "700"
+              }
+            ],
+            "label-sm": [
+              "12px",
+              {
+                "lineHeight": "16px",
+                "letterSpacing": "0.03em",
+                "fontWeight": "500"
+              }
+            ],
+            "label-md": [
+              "14px",
+              {
+                "lineHeight": "18px",
+                "letterSpacing": "0.02em",
+                "fontWeight": "600"
+              }
+            ],
+            "headline-xl-mobile": [
+              "30px",
+              {
+                "lineHeight": "38px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ],
+            "headline-xl": [
+              "36px",
+              {
+                "lineHeight": "44px",
+                "letterSpacing": "-0.02em",
+                "fontWeight": "700"
+              }
+            ],
+            "body-md": [
+              "16px",
+              {
+                "lineHeight": "22px",
+                "letterSpacing": "0em",
+                "fontWeight": "400"
+              }
+            ],
+            "body-md-bold": [
+              "16px",
+              {
+                "lineHeight": "22px",
+                "letterSpacing": "0em",
+                "fontWeight": "600"
+              }
+            ],
+            "title-sm": [
+              "18px",
+              {
+                "lineHeight": "24px",
+                "letterSpacing": "0em",
+                "fontWeight": "600"
+              }
+            ]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-[#F7F9F6] text-on-surface antialiased flex justify-center min-h-screen selection:bg-primary-fixed-dim">
+<!-- Mobile Container Shell (390px Viewport Simulation) -->
+<div class="w-full max-w-[390px] min-h-screen bg-[#F7F9F6] flex flex-col relative pb-28">
+<!-- Top App Bar (Shared Component Anchor translated with Style Guidance) -->
+<header class="bg-surface-container-lowest flex justify-between items-center w-full px-margin h-16 max-w-md mx-auto border-b border-outline-variant shadow-sm z-30 sticky top-0">
+<div class="flex items-center gap-2">
+<button aria-label="Go back" class="w-12 h-12 -ml-2 flex items-center justify-center text-primary active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<span class="text-headline-md font-headline-md text-primary tracking-tight">FarmSense</span>
+</div>
+<div class="flex items-center">
+<!-- Farmer User Avatar with subtle hairline border -->
+<div class="w-10 h-10 rounded-full border border-outline-variant overflow-hidden flex items-center justify-center bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up profile photo of a modern Indian farmer wearing an olive green field cap and linen work shirt standing in golden morning daylight outside a field research station, shot with soft natural lighting and sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoden5DfnFujF8mURoEfZiBVA8qze1qQzwaSI7xnfmbyIHupo36NILKu8GkVQpkx1lrw8ELJKns9F2pf2spqr87jdMH3nvI4Lu677mAPr3TJvTen__Stmy-qiHY1CBIFDyGfa1U2-PPKHXENQBlvXmVXIHzhxnqq0J5ZEI8pHS9cUhneokvbyhH85pHikNxTAJi7bhydYM1valn2h1D3xiK96-mE3l0L0VLRJ82gmUnB-X_lhkI6yk"/>
+</div>
+</div>
+</header>
+<!-- Main Screen Content Canvas -->
+<main class="flex-1 px-margin pt-4 flex flex-col gap-space-md">
+<!-- Screen Header with Section Title & Add Field CTA -->
+<section class="flex items-center justify-between gap-2">
+<div>
+<h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">My Fields</h1>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">4 Fields • 12.5 Acres Total in Gorakhpur</p>
+</div>
+<button class="h-[48px] px-4 bg-primary-container text-on-primary rounded-xl font-body-md-bold text-body-md-bold flex items-center gap-1.5 shadow-sm active:scale-95 active:bg-[#1D4524] transition-all shrink-0">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+<span>Add Field</span>
+</button>
+</section>
+<!-- Horizontal Filter / Sort Chips Bar -->
+<section class="overflow-x-auto no-scrollbar -mx-margin px-margin py-1 flex items-center gap-2">
+<!-- Chip 1: Active -->
+<button class="h-9 px-3.5 rounded-full bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1.5 shrink-0 shadow-xs active:scale-95 transition-transform">
+<span>All Fields (4)</span>
+</button>
+<!-- Chip 2: Needs Water Warning Filter -->
+<button class="h-9 px-3 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-label-md text-label-md flex items-center gap-1 shrink-0 active:scale-95 hover:border-primary transition-all">
+<span class="material-symbols-outlined text-[16px] text-[#0284C7]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span>Needs Water (1)</span>
+</button>
+<!-- Chip 3 -->
+<button class="h-9 px-3.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-label-md text-label-md flex items-center shrink-0 active:scale-95 hover:border-primary transition-all">
+<span>Wheat (2)</span>
+</button>
+<!-- Chip 4 -->
+<button class="h-9 px-3.5 rounded-full bg-surface-container-lowest border border-outline-variant text-on-surface-variant font-label-md text-label-md flex items-center shrink-0 active:scale-95 hover:border-primary transition-all">
+<span>Sugarcane (2)</span>
+</button>
+</section>
+<!-- Fields List Stack -->
+<section class="flex flex-col gap-space-md">
+<!-- Field Card 1: North Canal Plot -->
+<article class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] active:scale-[0.99] transition-transform cursor-pointer">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">psychiatry</span>
+</div>
+<div>
+<h2 class="text-body-md-bold font-body-md-bold text-on-background">Field #1 - North Canal Plot</h2>
+<p class="text-label-sm font-label-sm text-outline">4.2 Acres • Alluvial Loam Soil</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[22px] shrink-0">chevron_right</span>
+</div>
+<div class="mt-3.5 pt-3 border-t border-[#E2E8E2] flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-secondary">grass</span>
+<span class="text-label-md font-label-md">Wheat (PBW 550) - Day 42</span>
+</div>
+<!-- Status Badge: Optimal Health -->
+<div class="h-8 px-3 rounded-full bg-[#DCFCE7] text-[#16A34A] flex items-center gap-1.5 font-label-md text-label-md shrink-0">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span>Optimal Health (94%)</span>
+</div>
+</div>
+</article>
+<!-- Field Card 2: Tubewell East -->
+<article class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] active:scale-[0.99] transition-transform cursor-pointer">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-[#FEF3C7] flex items-center justify-center text-[#D97706] shrink-0 border border-[#FDE68A]">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">water_loss</span>
+</div>
+<div>
+<h2 class="text-body-md-bold font-body-md-bold text-on-background">Field #2 - Tubewell East</h2>
+<p class="text-label-sm font-label-sm text-outline">3.0 Acres • Clay Loam Soil</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[22px] shrink-0">chevron_right</span>
+</div>
+<div class="mt-3.5 pt-3 border-t border-[#E2E8E2] flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-secondary">grass</span>
+<span class="text-label-md font-label-md">Wheat (HD 2967) - Day 38</span>
+</div>
+<!-- Status Badge: Water Stress Warning -->
+<div class="h-8 px-3 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center gap-1.5 font-label-md text-label-md shrink-0">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span>Water Stress Warning</span>
+</div>
+</div>
+</article>
+<!-- Field Card 3: Riverbank Plot -->
+<article class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] active:scale-[0.99] transition-transform cursor-pointer">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]">forest</span>
+</div>
+<div>
+<h2 class="text-body-md-bold font-body-md-bold text-on-background">Field #3 - Riverbank Plot</h2>
+<p class="text-label-sm font-label-sm text-outline">3.5 Acres • Sandy Loam</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[22px] shrink-0">chevron_right</span>
+</div>
+<div class="mt-3.5 pt-3 border-t border-[#E2E8E2] flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-secondary">agriculture</span>
+<span class="text-label-md font-label-md">Sugarcane (Co 0238)</span>
+</div>
+<!-- Status Badge: Healthy -->
+<div class="h-8 px-3 rounded-full bg-[#DCFCE7] text-[#16A34A] flex items-center gap-1.5 font-label-md text-label-md shrink-0">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+<span>Healthy (88%)</span>
+</div>
+</div>
+</article>
+<!-- Field Card 4: Village Road Plot -->
+<article class="bg-surface-container-lowest border border-[#E2E8E2] rounded-xl p-4 shadow-[0_1px_3px_0_rgba(23,34,26,0.05)] active:scale-[0.99] transition-transform cursor-pointer">
+<div class="flex items-start justify-between gap-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-[24px]">explore</span>
+</div>
+<div>
+<h2 class="text-body-md-bold font-body-md-bold text-on-background">Field #4 - Village Road Plot</h2>
+<p class="text-label-sm font-label-sm text-outline">1.8 Acres • Silty Loam</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-[22px] shrink-0">chevron_right</span>
+</div>
+<div class="mt-3.5 pt-3 border-t border-[#E2E8E2] flex items-center justify-between flex-wrap gap-2">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-secondary">local_florist</span>
+<span class="text-label-md font-label-md">Mustard (Pusa Bold)</span>
+</div>
+<!-- Status Badge: Pending Sync -->
+<div class="h-8 px-3 rounded-full bg-[#FEF3C7] text-[#D97706] flex items-center gap-1.5 font-label-md text-label-md shrink-0">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">cloud_sync</span>
+<span>Pending Sync</span>
+</div>
+</div>
+</article>
+</section>
+<!-- Empty State / Boundary Mapping Assist Banner -->
+<section class="bg-surface-container-low border border-[#E2E8E2] rounded-xl p-4 flex items-center gap-3.5">
+<div class="w-12 h-12 rounded-xl bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-primary shrink-0 shadow-xs">
+<span class="material-symbols-outlined text-[26px]">pin_drop</span>
+</div>
+<div class="flex-1">
+<p class="text-label-md font-label-md text-on-background">Adding a lease or newly rented land?</p>
+<p class="text-label-sm font-label-sm text-on-surface-variant mt-0.5">Tap Add Field to map boundaries with GPS.</p>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Bar (Shared Component Anchor) -->
+<!-- Screen 3 is the 'Fields' destination, hence Fields is the strictly active tab -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-margin pb-safe max-w-md mx-auto bg-surface-container-lowest border-t border-outline-variant shadow-md">
+<!-- Destination 1: Dashboard (Inactive) -->
+<a class="flex flex-col items-center justify-center text-outline font-body-md text-body-md min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150 hover:text-primary" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="eco">eco</span>
+<span class="text-label-md font-label-md">Dashboard</span>
+</a>
+<!-- Destination 2: Fields (Active) -->
+<a class="flex flex-col items-center justify-center text-primary font-body-md-bold text-body-md-bold min-h-[48px] min-w-[48px] active:scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="text-label-md font-label-md">Fields</span>
+</a>
+</nav>
+</div>
+</body></html>

@@ -1,498 +1,256 @@
-# FarmSense 🌾
+# FarmSense
 
-A crop digital twin for smallholder rice and wheat farmers in **Gorakhpur
-district, Uttar Pradesh** — built with **no field hardware and no IoT sensors**.
+**A crop digital twin for smallholder rice and wheat farmers in Gorakhpur district, Uttar Pradesh, built with no field hardware and no IoT sensors.**
 
-Crop state is inferred from weather physics, satellite imagery, farmer check-ins
-and photo diagnosis, then fused into a single estimate that always ships with how
-much you should trust it.
+FarmSense simulates each field day by day from open weather, radiation and soil data. It corrects that simulation with Sentinel-1/Sentinel-2 imagery, weekly farmer check-ins and dated leaf photographs. Every recommendation is read from the resulting single crop state and ships with a confidence report.
 
-> **Scope:** rice and wheat, Gorakhpur only. The model is proved here before any
-> expansion. Every constant is calibrated for this district and lives in
-> `backend/src/modules/rules/regions/gorakhpur.json` — moving districts means
-> adding a file, not editing code.
+> **Scope.** Rice and wheat, Gorakhpur district. Every agronomic constant lives in [`backend/src/modules/rules/regions/gorakhpur.json`](backend/src/modules/rules/regions/gorakhpur.json). Moving to another district means adding a region file, not editing code.
+
+A research paper describing the design and its evaluation (rice cultivation; [`FarmSense_Research_Paper.docx`](FarmSense_Research_Paper.docx) / [`FarmSense_Research_Paper.pdf`](FarmSense_Research_Paper.pdf), LaTeX source in [`backend/experiments/paper/`](backend/experiments/paper)) is included at the repo root. The experiment scripts and raw results are in [`backend/experiments/`](backend/experiments).
 
 ---
 
-## The core idea: predict → observe → correct
+## Features
+
+| Area | What it does |
+|---|---|
+| **Crop digital twin** | Growing-degree-day phenology plus an FAO-56 water model: a soil-depletion bucket for wheat and a ponded-depth model for paddy. Every value is computed per field per day. |
+| **Observation correction** | Satellite, farmer check-ins and dated photos correct the twin through one confidence-weighted operator, `x' = x + c(x_obs − x)`. |
+| **Satellite grounding** | Sentinel-2 NDVI for wheat. Sentinel-1 VH backscatter detects the flooding signature to confirm rice transplant dates through the monsoon. Uses the free Copernicus Data Space Statistical API. |
+| **Farmer check-ins** | A single tap-to-answer question chosen by relevance. Answers become bounds on model state, never point values. |
+| **Photo diagnosis** | EfficientNet-B0 rice-leaf classifier (10 classes) behind a confidence gate, with a Grad-CAM++ heatmap of where it looked. A dated photo may lower the twin's health estimate when it disagrees with the simulation by more than 10 points. The farmer sees the before and after. |
+| **Recommendations** | Irrigation dose and timing (forecast-aware) and fertilizer plan, derived from one fused state. Fertilizer quantities come from published rate tables multiplied by measured area. |
+| **Chat assistant** | LangGraph ReAct agent that may state agronomic numbers only if a backend tool returned them. |
+| **Farmer's units** | Area in bigha, katha and dhur. Fertilizer in 50 kg sacks. The unit ladder is region data. |
+| **Field placement** | The farmer taps a point on a map. Points outside the district are rejected. |
+| **Confidence as output** | Staleness, cloud contamination, fallback data and model/observation disagreement lower reported confidence. Below a threshold the app advises a field visit. |
+
+### How the twin works
 
 ```
-              ┌─────────────────────────────────┐
-              │                                 │
-              ▼                                 │
-   ┌─────────────┐      ┌───────────┐     ┌───────────┐
-   │   PREDICT   │─────▶│  OBSERVE  │────▶│  CORRECT  │
-   │             │      │           │     │           │
-   │ FAO-56 ETo  │      │ Sentinel-2│     │ pull model│
-   │ + Kc + soil │      │ Sentinel-1│     │ toward the│
-   │ water model │      │ farmer    │     │ evidence, │
-   │             │      │ photo     │     │ widen the │
-   │             │      │ check-in  │     │ error bar │
-   └─────────────┘      └───────────┘     └───────────┘
+   PREDICT                     OBSERVE                    CORRECT
+   FAO-56 ET0 + Kc      ───▶   Sentinel-1 / Sentinel-2 ─▶ pull the state toward
+   + soil water model          farmer check-in            the evidence, weighted by
+   (per field, per day)        dated leaf photo           the observation's confidence
 ```
 
-A simulation with no correction path is not a digital twin — it is a plausible
-number that drifts for four months and never finds out it is wrong. The
-correction loop is what couples the model to the actual field.
-
-Full explanation: **[learning/04-predict-observe-correct.md](learning/04-predict-observe-correct.md)**
-
----
-
-## What makes this different
-
-**Physics, not heuristics.** Reference evapotranspiration is computed with FAO-56
-Penman-Monteith from real solar radiation and 2m wind. Every constant traces to a
-published source — FAO-56 tables, ICAR and UP Department of Agriculture rate
-guidelines, ISRIC SoilGrids measurements. Nothing is invented.
-
-**Rice and wheat get genuinely different models.** Wheat uses a soil-water
-depletion bucket. Rice uses a ponded-water-depth model — because a puddled paddy
-is saturated all season and "depletion below field capacity" is a meaningless
-quantity there. The two have opposite signs and different zero points; no amount
-of constant tuning turns one into the other.
-
-**Season-appropriate satellite grounding.** Wheat grows in the dry winter →
-Sentinel-2 optical NDVI works. Rice is transplanted into the monsoon → optical is
-blind for weeks, so Sentinel-1 **radar** detects the V-shaped flooding signature
-to confirm the actual transplant date.
-
-**The farmer is a sensor.** One yes/no question a week is a free, real, in-situ
-observation — and more current than any satellite pass.
-
-**Confidence is a safety control.** Every recommendation carries its staleness,
-input quality, and any model/observation disagreement. A three-week-stale
-estimate must not look identical to a fresh one.
-
-**Recommendations cannot lie.** Quantities come from published rate tables ×
-measured field area, never from a language model. Below a confidence threshold
-the disease classifier's treatment is **withheld entirely** — enforced by a
-discriminated union so the UI physically cannot render it. (The gate's real
-limits are documented honestly under
-[Model evaluation](#what-the-confidence-gate-does-and-does-not-protect-against).)
-
-**The chat agent explains, it never originates.** The LangGraph assistant answers
-in plain language, but every number it says comes back from a backend tool call
-(see [The grounding rule](#the-grounding-rule)).
-
-**Farmer's units.** Land is Bigha-Katha-Dhur, as written on the khatauni.
-Fertilizer is 50 kg sacks. Water is pump hours. The unit ladder is region data,
-not code — a bigha is 2529 m² in Gorakhpur and 6772 m² in the Nepal Terai, and
-that difference is a 2.7× error in every dose if it is hardcoded anywhere.
+A simulation with no correction path is a plausible number that drifts for a whole season. The correction loop is what couples the model to the field. Design notes: [`learning/04-predict-observe-correct.md`](learning/04-predict-observe-correct.md).
 
 ---
 
 ## Architecture
 
 ```
-farmsense-frontend/   React 19 + Vite 7 + Tailwind 4 + Zustand + Recharts
+farmsense-frontend/   React 19, Vite, Tailwind, Zustand, Recharts, Leaflet
 backend/              Express 5 + TypeScript (Node 24 native TS) + Supabase
-ai/                   FastAPI + PyTorch classifier + LangGraph chat agent
-learning/             Design notes — start at 00-index.md
-docker-compose.yml    All three services, one command
-.github/workflows/    CI: typecheck, test, lint, build for all three
+ai/                   FastAPI, PyTorch classifier, LangGraph chat agent
+learning/             Design notes, start at 00-index.md
+docker-compose.yml    Full stack in one command
 ```
-
-Request flow — the React app only ever talks to the Node backend; the AI service
-is internal and reachable only with a shared service token:
 
 ```
   React ──bearer JWT──▶ Express ──service token──▶ FastAPI ──▶ PyTorch / OpenAI
                           │  ▲                                     │
-                          │  └───── agent tools (user's own JWT) ──┘
+                          │  └──── agent tools (user's own JWT) ───┘
                           ▼
                    Supabase (Postgres + RLS)
-                   Open-Meteo · NASA POWER · SoilGrids · Copernicus · R2
+                   Open-Meteo · NASA POWER · SoilGrids · Copernicus · S3/R2/MinIO
 ```
+
+The browser talks only to the Node backend. The AI service is internal and reachable only with a shared service token.
 
 ### Backend modules
 
 | Module | Responsibility |
 |---|---|
-| `rules/` | FAO-56 ETo, water balance, paddy model, agronomic interpretation, confidence, region + treatment data files |
-| `region/` | Publishes the active region's land-unit ladder and crop list to the client |
-| `crop-state/` | The predict→observe→correct timeline engine |
-| `satellite/` | Copernicus Sentinel-1/2 access and interpretation |
-| `recommendations/` | The fused crop state + fertilizer/irrigation derivations |
-| `checkin/` | Farmer-as-sensor question selection and answer interpretation |
-| `disease/` | Photo → classification → R2 → `crop_states` |
-| `chat/` | Thin authenticated proxy to the AI service's agent |
-| `images/` | Cloudflare R2 object storage |
+| `rules/` | FAO-56 ET₀, water balance, paddy model, observation correction, confidence, region and treatment data files |
+| `crop-state/` | The predict → observe → correct timeline engine |
+| `satellite/` | Copernicus Sentinel-1/2 client and interpretation |
+| `recommendations/` | Fused crop state, irrigation and fertilizer derivations |
+| `checkin/` | Question selection and answer interpretation |
+| `disease/` | Photo, classification, storage, twin comparison |
+| `chat/` | Authenticated proxy to the AI agent |
+| `images/` | S3-compatible object storage (Cloudflare R2, or bundled MinIO) |
+| `region/` | Publishes the region's land-unit ladder, crops and bounds to the client |
 | `fields/` `crops/` `irrigation/` `fertilizer/` `auth/` | CRUD and ownership |
-
-### AI service
-
-| File | Purpose |
-|---|---|
-| `api.py` | FastAPI app, service-token auth, `/health` `/detect-disease` `/chat` |
-| `disease_model.py` | ResNet-18, 4 classes, lazy weight loading, inference |
-| `train_rice_model.py` / `eval_disease_model.py` | Transfer learning; generates `METRICS.md` |
-| `dataset.py` | The seed-fixed train/val/test split, shared by training and eval |
-| `image_utils.py` | EXIF-correct decode, compression for archival storage |
-| `langgraph_agent.py` | ReAct tool-calling graph, safety system prompt, ≤6 tool rounds |
-| `tools.py` | Agent tools — thin wrappers over backend endpoints |
-
-### Database
-
-Ten tables in Supabase Postgres: `users`, `fields`, `crop_instances`,
-`crop_states`, `crop_images`, `irrigation_actions`, `fertilizer_actions`,
-`satellite_observations`, `farmer_checkins`, `orphaned_rows`.
-
-Migrations are in `backend/supabase/migrations/` and must be applied **in
-order** — `row_level_security.sql` depends on `ownership_not_null.sql` having
-already run, or rows orphaned by a NULL predicate become invisible.
 
 ### External data (all free tier)
 
-| Source | Used for | Key needed |
+| Source | Used for | Key |
 |---|---|---|
-| [Open-Meteo](https://open-meteo.com) | Precipitation, temperature, **forecast** | No |
-| [NASA POWER](https://power.larc.nasa.gov) | Solar radiation and 2m wind for Penman-Monteith | No |
-| [ISRIC SoilGrids](https://soilgrids.org) | Per-field field capacity, wilting point, texture | No |
-| [Copernicus Data Space](https://dataspace.copernicus.eu) | Sentinel-1 SAR, Sentinel-2 optical | Free account |
-| [Cloudflare R2](https://developers.cloudflare.com/r2/) | Crop photos (**zero egress fees**) | Free account |
-| [OpenAI](https://platform.openai.com) | Chat agent language layer only — never a source of numbers | Paid key |
-
-Deliberately **not** Google Earth Engine — its free tier excludes commercial and
-operational use.
+| [Open-Meteo](https://open-meteo.com) | Rainfall, temperature, humidity, forecast | none |
+| [NASA POWER](https://power.larc.nasa.gov) | Solar radiation and 2 m wind | none |
+| [ISRIC SoilGrids](https://soilgrids.org) | Per-field soil water properties | none |
+| [Copernicus Data Space](https://dataspace.copernicus.eu) | Sentinel-1 SAR, Sentinel-2 optical | free account |
+| [OpenAI](https://platform.openai.com) | Chat language layer only, never a source of numbers | paid key |
 
 ---
 
-## Setup
+## Quick start (Docker)
 
-**Prerequisites:** Node 24+ (the backend runs TypeScript natively, no build
-step), Python 3.11+, a Supabase project.
+The whole stack starts with one command. You need Docker and a [Supabase](https://supabase.com) project.
 
-### 1. Database
+1. **Apply the database migrations** (once):
 
-```bash
-cd backend
-npx supabase login          # once
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
-```
+   ```bash
+   cd backend
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   npx supabase db push
+   ```
 
-The migrations are additive and idempotent — safe to run on an existing
-database, including one whose tables were created by hand in the dashboard.
+2. **Create `.env` in the repository root:**
 
-Verify they landed:
+   ```bash
+   SUPABASE_URL=...
+   SUPABASE_PUBLISHABLE_OR_ANON_KEY=...
+   SUPABASE_SERVICE_ROLE_KEY=...
+   AI_SERVICE_TOKEN=$(openssl rand -hex 32)   # paste the generated value
+   OPENAI_API_KEY=...                          # optional; enables chat
+   CDSE_CLIENT_ID=...                          # optional; enables satellite correction
+   CDSE_CLIENT_SECRET=...
+   ```
 
-```bash
-node --input-type=module -e "
-import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
-const s = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-for (const [t,c] of [['fields','area_sqm'],['fields','boundary'],['crop_states','source'],
-                     ['crop_images','r2_key'],['satellite_observations','ndvi'],
-                     ['farmer_checkins','question_key']]) {
-  const { error } = await s.from(t).select(c).limit(1);
-  console.log((error ? 'MISSING ' : 'present ') + t + '.' + c);
-}"
-```
+3. **Start it:**
 
-**If you change the schema by hand in the dashboard, regenerate the types** —
-otherwise the code compiles against a schema that no longer exists:
+   ```bash
+   docker compose up --build
+   ```
 
-```bash
-npx supabase gen types typescript --project-id <ref> --schema public \
-  > src/types/database.types.ts
-```
+| Service | URL |
+|---|---|
+| Web app | http://localhost:3000 |
+| Backend API | http://localhost:5050/api |
+| AI service | http://localhost:8000 |
+| MinIO console (photo storage) | http://localhost:9003 |
 
-### 2. Backend
+Crop photos go to the bundled MinIO by default, so no cloud account is needed. To use Cloudflare R2 instead, unset `S3_ENDPOINT` and set the `R2_*` variables.
 
-```bash
-cd backend
-npm install
-cp .env.example .env      # Supabase keys + AI_SERVICE_TOKEN
-npm run dev               # http://localhost:5050
-```
-
-Startup fails fast on a missing **required** variable and warns about any
-unconfigured **optional** integration. A missing one silently lowers the quality
-of every recommendation, so it should not take reading the code to discover it.
-
-```bash
-npm test          # 100 passing, 1 skipped
-npm run typecheck
-```
-
-### 3. AI service
-
-```bash
-cd ai
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env      # AI_SERVICE_TOKEN must match backend/.env
-uvicorn api:app --reload --port 8001
-```
-
-Model weights: run `python train_rice_model.py` then `python eval_disease_model.py`,
-or set `MODEL_URL` to hosted weights. See [ai/README.md](ai/README.md).
-
-Chat needs `OPENAI_API_KEY`; without it the classifier still works and `/chat`
-reports itself unavailable.
-
-### 4. Frontend
-
-```bash
-cd farmsense-frontend
-npm install
-cp .env.example .env      # VITE_API_URL
-npm run dev               # http://localhost:5173
-```
-
-### Verify everything is wired up
+Check that the integrations are wired:
 
 ```bash
 curl http://localhost:5050/api/health
+# { "status": "ok", "database": true,
+#   "integrations": { "ai_service": true, "r2_storage": true, "copernicus_satellite": true } }
 ```
 
-```json
-{ "status": "ok",
-  "database": true,
-  "integrations": { "ai_service": true, "r2_storage": true, "copernicus_satellite": true } }
-```
+## Local development
 
-### Docker
-
-All three services, with an `.env` at the repo root supplying the same keys:
+Requirements: Node 24+, Python 3.11+.
 
 ```bash
-docker compose up --build
-# frontend :3000   backend :5050   ai :8000
+# Backend  (http://localhost:5050)
+cd backend && npm install && cp .env.example .env && npm run dev
+
+# AI service  (http://localhost:8001)
+cd ai && python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt && cp .env.example .env
+uvicorn api:app --reload --port 8001
+
+# Frontend  (http://localhost:5173)
+cd farmsense-frontend && npm install && cp .env.example .env && npm run dev
 ```
 
-Two caveats: `docker-compose.yml` is not committed yet, and it passes
-`R2_BUCKET_NAME` while `config/env.ts` reads `R2_BUCKET` — so under Docker, R2
-silently falls back to the default bucket name. Local `npm run dev` is the
-verified path; the compose stack has not been run end to end.
+`AI_SERVICE_TOKEN` must be identical in `backend/.env` and `ai/.env`. The backend fails fast on a missing required variable and warns about each unconfigured optional integration.
+
+Migrations in `backend/supabase/migrations/` must be applied in order. If you change the schema by hand, regenerate the types:
+
+```bash
+npx supabase gen types typescript --project-id <ref> --schema public > src/types/database.types.ts
+```
 
 ---
 
 ## Configuration
 
-`backend/.env`
+**Backend** (`backend/.env` or root `.env` under Docker)
 
-| Variable | Required | Effect if absent |
+| Variable | Required | If absent |
 |---|---|---|
-| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_OR_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | **yes** | Server refuses to boot |
-| `AI_SERVICE_URL`, `AI_SERVICE_TOKEN` | no | Disease detection and chat disabled (fail closed) |
-| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE_URL` | no | Diagnoses recorded, photos not kept |
-| `CDSE_CLIENT_ID`, `CDSE_CLIENT_SECRET` | no | **No satellite correction** — confidence stays low, honestly |
-| `PORT`, `FRONTEND_URL`, `DEFAULT_REGION` | no | Default to `5050`, `localhost:5173`, `gorakhpur` |
+| `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_OR_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | yes | Server refuses to start |
+| `AI_SERVICE_URL`, `AI_SERVICE_TOKEN` | no | Photo diagnosis and chat disabled (fails closed) |
+| `CDSE_CLIENT_ID`, `CDSE_CLIENT_SECRET` | no | No satellite correction; confidence stays low |
+| `S3_ENDPOINT`, `S3_PUBLIC_ENDPOINT`, `R2_*` | no | Diagnoses recorded, photos not kept |
+| `PORT`, `FRONTEND_URL`, `DEFAULT_REGION` | no | `5050`, `http://localhost:5173`, `gorakhpur` |
 
-`ai/.env`
+**AI service** (`ai/.env`)
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `AI_SERVICE_TOKEN` | — | Shared secret; must equal the backend's. Unset ⇒ 503 to everything |
-| `OPENAI_API_KEY`, `OPENAI_MODEL` | `gpt-4o` | Chat agent language layer |
-| `CONFIDENCE_GATE` | `0.65` | Below this softmax probability no treatment is named |
-| `MODEL_PATH`, `MODEL_URL` | `rice_model.pth` | Local weights, or a URL to fetch them on first inference |
-| `MAX_IMAGE_EDGE_PX`, `JPEG_QUALITY`, `MAX_UPLOAD_BYTES` | `1000`, `75`, 12 MB | Archival compression limits |
-| `BACKEND_URL` | `http://localhost:5050` | Where the agent tool layer calls back to |
+| `AI_SERVICE_TOKEN` | none | Shared secret. If unset, every request returns 503. |
+| `OPENAI_API_KEY`, `OPENAI_MODEL` | none, `gpt-4o` | Chat language layer |
+| `CONFIDENCE_GATE` | `0.65` | Minimum softmax probability before a treatment is named |
+| `MODEL_PATH`, `MODEL_URL` | `ai/models/rice_v2/rice_model.pth` | Local weights (with `classes.json` beside them), or a URL to fetch the weights |
+| `BACKEND_URL` | `http://localhost:5050` | Where the agent's tools call back |
 
-`farmsense-frontend/.env` — `VITE_API_URL` (no trailing slash).
-
----
-
-## API
-
-All routes except `/api/health` and `/api/auth/*` require a Supabase bearer
-token. Ownership is enforced twice: by `.eq("user_id", …)` in the service layer
-and by row-level security in Postgres.
-
-**Recommendations** — the surface the app actually reads from
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/recommendations/:cropId` | **Everything**, derived from one fused state |
-| GET | `/api/recommendations/:cropId/state` | The canonical crop state |
-| GET | `/api/recommendations/:cropId/irrigation` | Dosage + forecast-aware timing |
-| GET | `/api/recommendations/:cropId/fertilizer` | Rate table × field area |
-
-**Crop state and the twin**
-
-| Method | Path | Purpose |
-|---|---|---|
-| GET | `/api/crop-states/timeline/:cropId` | Full day-by-day simulation |
-| GET | `/api/crop-states/:cropId/current` | Latest state only |
-| GET | `/api/crop-states/:cropId` | State history |
-| POST | `/api/crop-states` | Manual state entry |
-| DELETE | `/api/crop-states/state/:stateId` | Remove a state |
-
-**Observation channels**
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/api/disease/crop/:cropId/analyse` | Photo → diagnosis → health history |
-| GET | `/api/disease/crop/:cropId/images` | Photo history |
-| GET | `/api/satellite/field/:fieldId/observations` | Stored passes |
-| POST | `/api/satellite/field/:fieldId/refresh` | Fetch a fresh Sentinel-2 pass |
-| GET | `/api/satellite/crop/:cropId/transplant-detection` | Sentinel-1 V-shape detection |
-| GET | `/api/checkins/crop/:cropId/due` | The question worth asking right now |
-| GET | `/api/checkins/crop/:cropId/history` | Past answers |
-| POST | `/api/checkins/:checkinId/answer` | Record the answer |
-
-**Records and CRUD**
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST/GET/PUT/DELETE | `/api/fields`, `/api/fields/:fieldId` | Fields (area in the region's customary units, optional boundary) |
-| POST | `/api/crops` · GET `/api/crops/field/:fieldId` · GET/PUT/DELETE `/api/crops/:cropId` | Crop instances |
-| POST | `/api/irrigation` · GET `/api/irrigation/:cropId` · DELETE `/api/irrigation/:irrigationId` | Irrigation log |
-| POST | `/api/fertilizer` · GET `/api/fertilizer/:cropId` · DELETE `/api/fertilizer/:fertilizerId` | Fertilizer log |
-
-**Other**
-
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/api/auth/signup` · `/api/auth/login` · `/api/auth/refresh` | Auth |
-| GET | `/api/region` | Active region: land-unit ladder + crop list (public) |
-| POST | `/api/chat` | `{ message, crop_id, history }` → agent reply |
-| GET | `/api/health` | Which integrations are actually configured |
-
-Internal AI service (service token only, never exposed to the browser):
-`GET /health`, `POST /detect-disease`, `POST /chat`.
+**Frontend** (`farmsense-frontend/.env`): `VITE_API_URL`, with no trailing slash.
 
 ---
 
-## The grounding rule
+## API overview
 
-> **The agent never originates an agronomic number.**
+All routes except `/api/health`, `/api/region` and `/api/auth/*` require a Supabase bearer token.
 
-Every tool in `ai/tools.py` is a thin wrapper over a backend endpoint.
-Fertilizer quantities come from a published ICAR / UP Department of Agriculture
-rate table × a measured field area. Irrigation volumes come from the FAO-56 water balance. Treatments come
-from a reviewed lookup gated on classifier confidence. Tool results are prefixed
-with a `CONFIDENCE` line the model is instructed to carry through verbatim.
-
-The tools forward **the farmer's own Supabase token**, not a service key — so the
-backend's ownership checks and RLS apply unchanged, and the agent cannot read a
-crop its user does not own even if it is asked to.
-
-An LLM asked "how much urea for my rice" produces a fluent, specific, confident
-number, and a farmer cannot tell it apart from the right one. See
-[learning/11-agent-grounding.md](learning/11-agent-grounding.md).
+| Group | Routes |
+|---|---|
+| Recommendations | `GET /api/recommendations/:cropId` (+ `/state`, `/irrigation`, `/fertilizer`) |
+| Twin | `GET /api/crop-states/timeline/:cropId`, `GET /api/crop-states/:cropId/current` |
+| Photos | `POST /api/disease/crop/:cropId/analyse` (image + `taken_on`), `GET /api/disease/crop/:cropId/images` |
+| Satellite | `GET /api/satellite/field/:fieldId/observations`, `POST …/refresh`, `GET /api/satellite/crop/:cropId/transplant-detection` |
+| Check-ins | `GET /api/checkins/crop/:cropId/due`, `POST /api/checkins/:checkinId/answer` |
+| Records | `/api/fields`, `/api/crops`, `/api/irrigation`, `/api/fertilizer` (create, read, update, delete) |
+| Chat | `POST /api/chat` → `{ message, crop_id, history }` |
+| Other | `POST /api/auth/{signup,login,refresh}`, `GET /api/region`, `GET /api/health` |
 
 ---
 
-## Security
+## Safety design
 
-- **Two layers of tenant isolation.** Service-layer `user_id` filters *and*
-  Postgres RLS policies. A dropped policy does not silently open the database; a
-  missed filter does not silently leak it.
-- **The AI service fails closed.** With `AI_SERVICE_TOKEN` unset it returns 503
-  to everything rather than running wide open — a misconfigured deploy should be
-  obviously broken, not quietly insecure.
-- **Rate limiting.** A general limiter on every route, a stricter one on
-  `/api/auth`, and a per-user limiter on the expensive routes (`/api/disease`,
-  `/api/chat`).
-- **Helmet** security headers, CORS pinned to `FRONTEND_URL`, 1 MB JSON body cap.
+- **The agent never originates an agronomic number.** Its tools are thin wrappers over backend endpoints, and the system prompt forbids any dose, volume or quantity that a tool did not return. Background: [`learning/11-agent-grounding.md`](learning/11-agent-grounding.md).
+- **Tenant isolation in two layers.** Service-layer `user_id` filters plus Postgres row-level security. The agent forwards the farmer's own token, so it cannot read another user's field.
+- **Gated diagnoses.** Below the confidence gate the API response contains no treatment field at all.
+- **Fail closed.** The AI service returns 503 when `AI_SERVICE_TOKEN` is unset. The satellite client raises on any error other than "no data".
+- **Region validation.** Locations outside the calibrated district are rejected by the API.
+- **Hardening.** Helmet headers, CORS pinned to `FRONTEND_URL`, a 1 MB JSON body cap, and rate limits (stricter on `/api/auth`, `/api/disease` and `/api/chat`).
 
 ---
 
-## Testing and CI
+## Testing
 
 ```bash
-cd backend && npm test        # 100 passing, 1 skipped (node:test)
-cd backend && npm run typecheck
+cd backend && npm test && npm run typecheck        # node:test suite
 cd farmsense-frontend && npm run lint && npm run build
 cd ai && pytest -v && ruff check .
 ```
 
-The backend suite tests the parts where being wrong is expensive: ETo against
-FAO-56 worked examples, water-balance and paddy invariants (depletion bounded by
-TAW, Ks throttling past RAW, excess becoming deep percolation), Bigha-Katha-Dhur
-conversions, and rejection of crops the region has no calibration for. See
-[learning/12-testing-a-physical-model.md](learning/12-testing-a-physical-model.md).
-
-**The ownership/RLS test is the skipped one.** It needs a real Supabase to prove
-anything, so it self-skips unless credentials are exported and — against a
-remote project — `ALLOW_REMOTE_OWNERSHIP_TESTS=1` is set. Tenant isolation is
-therefore *implemented* but not *demonstrated* by a default `npm test` run:
-
-```bash
-SUPABASE_URL=... SUPABASE_PUBLISHABLE_OR_ANON_KEY=... \
-SUPABASE_SERVICE_ROLE_KEY=... ALLOW_REMOTE_OWNERSHIP_TESTS=1 npm test
-```
-
-`.github/workflows/ci.yml` defines three jobs (backend, frontend, AI) for every
-push and PR to `main`. Backend linting is skipped on purpose: typescript-eslint
-does not support TS 7 yet.
-
-**Current CI status: not yet green, and not yet committed.** The workflow file is
-still untracked, so it has never run. As written, two of the three jobs would
-fail today:
-
-| Job | State | Why |
-|---|---|---|
-| Backend | would pass | typecheck and tests are clean |
-| Frontend | would fail | `npm run lint` reports 10 errors (mostly `no-explicit-any` in `catch` blocks) |
-| AI | would fail | `pytest` is in the workflow but `ai/` contains no tests, and pytest exits non-zero when it collects none |
+The backend suite covers the parts where an error is costly: ET₀ against FAO-56 worked examples, water-balance invariants, bigha-katha-dhur conversion, and the correction operator. CI (`.github/workflows/ci.yml`) runs all three projects on every push and pull request. The ownership/RLS test needs a real Supabase and skips itself unless credentials and `ALLOW_REMOTE_OWNERSHIP_TESTS=1` are set.
 
 ---
 
-## Model evaluation
+## Evaluation summary
 
-> **The classifier is currently unevaluated. There is no accuracy figure for this
-> project, and none should be quoted anywhere.**
+Details, methods and caveats are in the research paper. Headline results:
 
-`ai/eval_disease_model.py` is written and would generate `ai/METRICS.md` on a
-held-out test split fixed by seed in `ai/dataset.py`. It has not been run against
-the committed weights, `ai/METRICS.md` does not exist, and `ai/data/` is absent —
-so the evaluation cannot currently be reproduced without re-acquiring the
-dataset. What exists is a trained ResNet-18 with a 4-class head that loads and
-performs inference; how well it does so is unmeasured.
+| Component | Result |
+|---|---|
+| ET₀ vs FAO-56 Uccle example | 3.88 mm/day vs 3.9 published |
+| ET₀ vs Open-Meteo, full 2025–26 seasons, 3 points | r = 0.92–0.99, RMSE 0.42–0.51 mm/day |
+| Wheat irrigation with shipped 1.5 m root depth | 1–2 irrigations per season vs 6 in the ICAR calendar; a 0.6 m root depth gives 3–5 |
+| Farmer check-ins (simulation) | Help when irrigation is unlogged; harmful at high answer-error rates |
+| Sentinel-1/2 retrieval | Works through the monsoon; 2 of 12 planned grid points completed, no ground truth |
+| Confidence gate on non-leaf images | **91% accepted.** The softmax gate cannot reject out-of-distribution input. |
 
-When it is run, it reports per-class recall, **calibration**, and the gate's
-effect — not just overall accuracy — because a model that says 0.9 and is right
-70% of the time makes the confidence gate useless, and overall accuracy hides
-whichever class you are missing.
+## Known limitations
 
-### What the confidence gate does and does not protect against
+- **Gorakhpur, rice and wheat only.** Phase boundaries and Kc values are literature defaults, not yet fitted to local ground truth.
+- **The disease classifier is unevaluated.** It covers four rice classes with no accuracy figure and no "not a leaf" class, so it must be treated as decision support until a rejection mechanism and a labelled test set exist.
+- **The wheat root depth of 1.5 m under-triggers irrigation** and needs local calibration before advice is relied on.
+- **Check-in trust weights are fixed.** Wrong answers can degrade the estimate when irrigation is already logged.
+- **Sentinel-1 transplant detection** cannot distinguish a paddy from any other persistently flooded surface.
+- **Unlogged irrigation is the largest source of drift.** The check-in loop exists to catch it.
+- **Disease treatments** must be reviewed against the current CIB&RC pesticide registry before a farmer acts on them.
+- **No field trial has been run.** No yield or adoption claims are made.
 
-The gate is a softmax threshold over four in-distribution classes. It correctly
-withholds a treatment when the model is torn *between those four*. It does
-nothing about inputs the model was never trained on, because softmax over four
-classes has no way to express "none of these". Reproducible today:
+## Documentation
 
-| Input | Predicted | Confidence | Gate outcome |
-|---|---|---|---|
-| A wide paddy field photo, not a leaf | `brown_spot` | 0.97 | passes — treatment shown |
-| A solid red rectangle | `leaf_blast` | 1.00 | passes — treatment shown |
-| Pure noise | `leaf_blast` | 1.00 | passes — treatment shown |
-
-An out-of-distribution reject path is required before any farmer uses photo
-diagnosis. This is a known gap, not a discovered surprise.
-
----
-
-## Learning notes
-
-Design notes explaining every significant decision, why it was made, and what
-breaks if you get it wrong.
-
-Start at **[learning/00-index.md](learning/00-index.md)**.
-
----
-
-## Known limits
-
-- **Gorakhpur only.** Kc values, GDD boundaries, phase calendars and the land-unit
-  ladder are calibrated for this district. Another region needs its own
-  `regions/*.json` — including its own bigha, which is not a constant across UP.
-- **Phase boundaries are literature defaults.** They were carried over from the
-  earlier Terai calibration and adjusted for Purvanchal sowing dates. They have
-  not yet been fitted against a season of local ground truth.
-- **Rice and wheat only.** Any other crop needs its own water model and rate table.
-- **Sentinel-2 correction is unavailable during the monsoon.** Expected — that is
-  what the Sentinel-1 channel is for, and confidence reflects it honestly.
-- **Fertilizer doses are district defaults.** A farmer's soil test overrides them.
-- **Disease treatments need review against the current CIB&RC registered pesticide
-  list** before any real farmer acts on them. The data file says so explicitly.
-- **The classifier covers rice leaves only** — four classes, with no "not a rice
-  leaf" class and no accuracy measurement. It has nothing to say about wheat, and
-  it will confidently classify a photo of anything at all.
-- **Unlogged irrigation degrades the water balance.** This is the single largest
-  source of drift, and the main thing the farmer check-in loop exists to catch.
+Design notes explaining each significant decision are in [`learning/`](learning/00-index.md). The AI service is described in [`ai/README.md`](ai/README.md).

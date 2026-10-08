@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../../services/api.ts";
-import { AreaInput, type AreaValue } from "../components/AreaInput.tsx";
-import { useRegion, areaToSqm } from "../../../services/region.ts";
+
+import { api } from "../../../services/api";
+import { LocationPicker } from "../components/LocationPicker";
+import { AreaInput, type AreaValue } from "../components/AreaInput";
+import { useRegion, areaToSqm } from "../../../services/region";
 import { apiErrorMessage } from "../../../services/apiError";
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  PageHeader,
+  TextField,
+} from "../../../components/ui";
 
 export default function AddField() {
   const navigate = useNavigate();
@@ -20,9 +30,9 @@ export default function AddField() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Default the pin to the district centre once the region config arrives.
-  // Hardcoding a lat/long here is how a location change leaves fields sitting
-  // in the wrong country while everything still looks like it works.
+  // Start the pin at the district centre once the region config arrives; the
+  // farmer then moves it to their own plot. Not hardcoded, so a region change
+  // cannot leave the map opening in the wrong country.
   useEffect(() => {
     if (region) {
       setForm((f) => ({
@@ -35,6 +45,8 @@ export default function AddField() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!region) return;
 
     if (areaToSqm(area, region?.land_units.levels ?? []) <= 0) {
       setError(
@@ -60,72 +72,49 @@ export default function AddField() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-xl bg-white p-8 rounded-xl shadow-sm border">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Create New Field</h2>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader
+        back={{ to: "/fields", label: "My fields" }}
+        title="Add a field"
+        description="Record the plot as it appears on your land record. Everything the app calculates is measured from this."
+      />
 
-        {error && (
-          <div className="bg-red-50 text-red-600 border border-red-200 p-3 mb-5 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
+      <Card className="p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && <Alert tone="error">{error}</Alert>}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Field Name
-            </label>
-            <input
-              placeholder="e.g. North Farm, Green Valley Plot"
-              className="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              value={form.location_name}
-              onChange={(e) => setForm({ ...form, location_name: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {(["latitude", "longitude"] as const).map((key) => (
-              <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                  {key} (locked to {region?.name ?? "your district"})
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  className="w-full border border-gray-300 p-3 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
-                  value={form[key]}
-                  readOnly
-                />
-              </div>
-            ))}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Soil Type (locked to {region?.name ?? "your district"})
-            </label>
-            <input
-              className="w-full border border-gray-300 p-3 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed"
-              value={form.soil_type}
-              readOnly
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Actual soil water-holding capacity is looked up per field from ISRIC
-              SoilGrids when you view crop health.
-            </p>
-          </div>
+          <TextField
+            label="Field name"
+            placeholder="e.g. Ganga side plot, North bigha"
+            hint="Whatever you call it when you talk about it."
+            value={form.location_name}
+            onChange={(e) => setForm({ ...form, location_name: e.target.value })}
+            required
+          />
 
           <AreaInput value={area} onChange={setArea} />
 
-          <button
-            disabled={loading}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium p-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Creating Field..." : "Create Field"}
-          </button>
+          <LocationPicker
+            value={{ latitude: form.latitude, longitude: form.longitude }}
+            onChange={(p) => setForm({ ...form, ...p })}
+            region={region}
+          />
+
+          <p className="text-xs text-clay-500">
+            Soil water-holding capacity is looked up for this exact point from
+            ISRIC SoilGrids when you view crop health.
+          </p>
+
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+            <ButtonLink to="/fields" variant="ghost">
+              Cancel
+            </ButtonLink>
+            <Button type="submit" size="lg" disabled={loading}>
+              {loading ? "Saving..." : "Save field"}
+            </Button>
+          </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 }

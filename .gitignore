@@ -29,7 +29,8 @@ backend/supabase/.cache/
 coverage/
 
 venv
-ai/__pycache__
+__pycache__/
+*.py[cod]
 ai/venv
 rice_model.pth
 # AI service
@@ -38,3 +39,13 @@ ai/uploads/
 ai/METRICS.md
 ai/eval_results.json
 ai/training_run.json
+
+# Research/experiment working files not meant for the repo
+backend/experiments/paper/main.pdf
+backend/experiments/paper/*.docx
+backend/experiments/paper/preview*/
+
+# Personal course submission artifacts (rubrics, grading-related docs)
+FALLSEM*Evaluation-rubrics.pdf
+REVIEW_II_PRESENTATION.md
+tarpt-final-report*.pdf

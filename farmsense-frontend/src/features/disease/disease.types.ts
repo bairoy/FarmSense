@@ -4,6 +4,8 @@ export type DiseaseDiagnosis = {
   /** Gap between the top two class probabilities - low means a coin flip. */
   margin: number;
   probabilities: Record<string, number>;
+  /** Grad-CAM++ overlay as a data URI: where in the photo the model looked. Null when unavailable. */
+  heatmap: string | null;
 };
 
 export type ChemicalTreatment = {
@@ -39,9 +41,24 @@ export type BelowGateGuidance = {
  * `treatment` field at all, which makes it impossible for the UI to render a
  * chemical recommendation the backend decided not to stand behind.
  */
+/**
+ * How a dated photo compared with the crop twin's own estimate for that day.
+ * `null` when the comparison could not be run (e.g. weather data unavailable).
+ */
+export type TwinCorrection = {
+  adjusted: boolean;
+  date: string;
+  simulated_health: number;
+  observed_health: number;
+  corrected_health: number;
+  note: string;
+};
+
 export type AnalysisResult = {
   crop_instance_id: string;
   crop_state_id: string | null;
+  taken_on: string;
+  twin_correction: TwinCorrection | null;
   diagnosis: DiseaseDiagnosis;
   image_url: string | null;
   health_score: number;

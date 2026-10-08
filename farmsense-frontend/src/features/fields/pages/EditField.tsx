@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
 import type { CreateFieldPayload } from "../field.types";
+import { LocationPicker } from "../components/LocationPicker";
+import { useRegion } from "../../../services/region";
 import { AreaInput, type AreaValue } from "../components/AreaInput";
 import { getFieldById, updateField } from "../field.service";
 import { apiErrorMessage } from "../../../services/apiError";
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  LoadingPanel,
+  PageHeader,
+  TextField,
+} from "../../../components/ui";
 
 export default function EditField() {
   const { fieldId } = useParams();
   const navigate = useNavigate();
+  const { region } = useRegion();
 
   const [form, setForm] = useState<CreateFieldPayload>({
     location_name: "",
@@ -22,13 +35,13 @@ export default function EditField() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch field data
   useEffect(() => {
     if (!fieldId) return;
+    let active = true;
 
-    const fetchField = async () => {
-      try {
-        const res = await getFieldById(fieldId);
+    getFieldById(fieldId)
+      .then((res) => {
+        if (!active) return;
         const data = res.data;
 
         setForm({
@@ -41,14 +54,13 @@ export default function EditField() {
         // The backend returns the canonical area already decomposed into the
         // region's customary units, so nothing is converted here.
         if (data.area?.units) setArea(data.area.units);
-      } catch {
-        setError("Failed to load field data.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      })
+      .catch(() => active && setError("Could not load this field."))
+      .finally(() => active && setLoading(false));
 
-    fetchField();
+    return () => {
+      active = false;
+    };
   }, [fieldId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,14 +68,12 @@ export default function EditField() {
 
     setForm({
       ...form,
-      [name]:
-        name === "latitude" || name === "longitude" ? Number(value) : value,
+      [name]: name === "latitude" || name === "longitude" ? Number(value) : value,
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!fieldId) return;
 
     setSaving(true);
@@ -80,97 +90,61 @@ export default function EditField() {
   };
 
   if (loading) {
-    return <div>Loading field...</div>;
+    return (
+      <div className="mx-auto max-w-2xl">
+        <LoadingPanel label="Loading field" />
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-white p-8 rounded-xl shadow border">
-      <h2 className="text-2xl font-semibold mb-6">
-        Edit Field
-      </h2>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader
+        back={{ to: "/fields", label: "My fields" }}
+        title="Edit field"
+        description="Correcting the area re-scales every fertilizer and water amount for this plot."
+      />
 
-      {error && (
-        <div className="bg-red-50 text-red-600 border border-red-200 p-3 mb-5 rounded-lg text-sm">
-          {error}
-        </div>
-      )}
+      <Card className="p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && <Alert tone="error">{error}</Alert>}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-
-        {/* Field Name */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Field Name
-          </label>
-          <input
+          <TextField
+            label="Field name"
             name="location_name"
             value={form.location_name}
             onChange={handleChange}
-            className="w-full border p-3 rounded-lg"
             required
           />
-        </div>
 
-        {/* Coordinates */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Latitude
-            </label>
-            <input
-              name="latitude"
-              type="number"
-              step="any"
-              value={form.latitude}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            />
-          </div>
+          <AreaInput value={area} onChange={setArea} />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Longitude
-            </label>
-            <input
-              name="longitude"
-              type="number"
-              step="any"
-              value={form.longitude}
-              onChange={handleChange}
-              className="w-full border p-3 rounded-lg"
-              required
-            />
-          </div>
-        </div>
+          <LocationPicker
+            value={{ latitude: form.latitude, longitude: form.longitude }}
+            onChange={(p) => setForm({ ...form, ...p })}
+            region={region}
+          />
 
-        {/* Soil Type */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            Soil Type
-          </label>
-          <input
+
+          <TextField
+            label="Soil type"
             name="soil_type"
             value={form.soil_type}
             onChange={handleChange}
-            className="w-full border p-3 rounded-lg"
+            hint="Per-field water-holding capacity still comes from SoilGrids; this is the district description."
             required
           />
-        </div>
 
-        {/* Area */}
-        <AreaInput value={area} onChange={setArea} />
-
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg disabled:opacity-50"
-        >
-          {saving ? "Updating..." : "Update Field"}
-        </button>
-      </form>
+          <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+            <ButtonLink to="/fields" variant="ghost">
+              Cancel
+            </ButtonLink>
+            <Button type="submit" size="lg" disabled={saving}>
+              {saving ? "Saving..." : "Save changes"}
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }

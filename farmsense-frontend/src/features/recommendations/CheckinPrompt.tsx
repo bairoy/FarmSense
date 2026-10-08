@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { CheckCircle2, MessageSquareQuote } from "lucide-react";
+
 import {
   getDueCheckin,
   answerCheckin,
@@ -57,8 +59,9 @@ export function CheckinPrompt({ cropId }: { cropId: string }) {
 
   if (thanks) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-sm text-green-900">
-        ✓ {thanks}
+      <div className="flex gap-3 rounded-2xl border border-field-200 bg-field-50 p-4">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-field-600" />
+        <p className="text-sm text-field-900">{thanks}</p>
       </div>
     );
   }
@@ -68,36 +71,42 @@ export function CheckinPrompt({ cropId }: { cropId: string }) {
   const question = checkin.question;
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-      <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">
+    <section className="animate-rise rounded-2xl border border-water-200 bg-water-50 p-5">
+      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-water-700">
+        <MessageSquareQuote className="h-4 w-4" />
         Quick check
       </p>
 
-      <p className="mt-2 font-medium text-blue-950">
+      <p className="mt-2.5 text-lg font-bold text-water-950">
         {question?.question ?? checkin.question_text}
       </p>
       {question?.question_ne && (
-        <p className="text-sm text-blue-800">{question.question_ne}</p>
+        <p className="mt-0.5 text-water-800">{question.question_ne}</p>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      {/* Answer buttons are full-width blocks on a phone. Three small chips in
+          a row is a mis-tap waiting to happen, and a wrong answer here feeds
+          straight into the model as an observation. */}
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
         {(question?.options ?? []).map((option) => (
           <button
             key={option.value}
             onClick={() => submit(option.value)}
             disabled={submitting}
-            className="px-4 py-2 bg-white border border-blue-300 rounded-lg text-sm hover:bg-blue-100 disabled:opacity-50 transition"
+            className="min-h-14 rounded-xl border border-water-300 bg-white px-4 py-2 text-center font-semibold text-water-900 transition-colors hover:border-water-500 hover:bg-water-100 disabled:opacity-50"
           >
             <span className="block">{option.label}</span>
-            <span className="block text-xs text-gray-500">{option.label_ne}</span>
+            <span className="block text-sm font-normal text-clay-500">
+              {option.label_ne}
+            </span>
           </button>
         ))}
       </div>
 
-      <p className="mt-3 text-xs text-blue-700">
+      <p className="mt-3 text-xs text-water-800">
         Your answer corrects the model directly — it is treated the same way as a
         satellite reading.
       </p>
-    </div>
+    </section>
   );
 }

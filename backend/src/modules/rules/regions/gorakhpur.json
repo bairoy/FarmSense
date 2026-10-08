@@ -14,6 +14,13 @@
     "latitude": 26.76,
     "longitude": 83.37
   },
+  "bounds": {
+    "_note": "Approximate bounding box around Gorakhpur district. The rule engine is only calibrated inside it; a field pinned outside is rejected.",
+    "south": 26.1,
+    "north": 27.1,
+    "west": 83.0,
+    "east": 84.0
+  },
   "elevation_m": 84,
   "land_units": {
     "system": "bigha-katha-dhur",

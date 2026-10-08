@@ -1,15 +1,21 @@
 """LangGraph agent for FarmSense chat.
 
-Uses LangGraph with OpenAI for tool-calling. The agent follows the ReAct pattern:
-think, decide whether to call a tool, call it, observe the result, repeat.
+A ReAct loop: think, decide whether to call a tool, call it, observe the
+result, repeat. Runs against the OpenAI API.
 
-The system prompt enforces the same safety rules as the original Anthropic agent:
-the model must NEVER produce agronomic quantities of its own. Every number a
-farmer acts on must come from a tool result.
+The safety property: the model must
+NEVER produce an agronomic quantity of its own. Every number a farmer acts on
+comes from a tool result, and the tools carry the farmer's own JWT so the
+database applies row-level security to the agent exactly as it does to them.
+
+That property depends on tool calls actually being dispatched, which is why
+`_recover_text_tool_calls` exists - a local model that emits its call as prose
+would otherwise silently bypass the tools and answer from its own weights.
 """
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Annotated, Any, Literal
 
@@ -27,9 +33,13 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
 from typing_extensions import TypedDict
 
-from config import OPENAI_API_KEY, OPENAI_MODEL
+from config import (
+    OPENAI_API_KEY,
+    OPENAI_MODEL,
+)
 from tools import (
     BackendError,
+    _get,
     get_crop_state_summary,
     get_fertilizer_recommendation,
     get_irrigation_recommendation,
@@ -68,7 +78,8 @@ HOW TO ANSWER:
 - Short, direct, practical. A farmer reading this on a phone in a field.
 - Lead with the action, then the reason.
 - Plain language. Say "the soil is dry" not "root zone depletion exceeds RAW".
-- If the farmer writes in Hindi or Bhojpuri, answer in the same language.
+- ALWAYS answer in English, even if the farmer writes in Hindi, Bhojpuri or \
+another language. Keep crop, product and place names as they are.
 - When you genuinely do not know, say so and suggest they contact their local \
 agriculture extension officer. That is a good answer, not a failure.
 
@@ -153,18 +164,108 @@ def create_tools(crop_id: str, token: str):
     return [get_crop_state, get_irrigation, get_fertilizer]
 
 
+def _chat_model():
+    """The OpenAI chat model.
+
+    temperature=0: this agent is not writing prose - it is deciding which tool
+    to call and relaying the numbers that come back, and sampling variety in
+    that job just means occasionally deciding not to call the tool.
+    """
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not set.")
+
+    return ChatOpenAI(
+        model=OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        temperature=0,
+        max_tokens=1500,
+    )
+
+
+def _recover_text_tool_calls(
+    response: AIMessage, valid_names: set[str]
+) -> AIMessage:
+    """Rescue a tool call the model emitted as prose instead of structure.
+
+    Local models sometimes return a tool call in the message body rather than
+    in the structured `tool_calls` field. `langchain-ollama` 1.1.0 does this
+    reliably for zero-argument tools - which is all three of ours, since
+    crop_id and token are closed over rather than passed - and the raw Ollama
+    API returns proper tool_calls for the identical request, so the model is
+    not at fault.
+
+    Left alone the consequence is severe rather than cosmetic. `should_continue`
+    sees no tool_calls, ends the turn, and the farmer is shown
+    `{"type":"function","function":{"name":"get_fertilizer",...}}` as their
+    agronomic advice.
+
+    So: a tool call that arrives as text is still a tool call. Parse it back
+    into structure, and only ever for a name we actually published - a
+    hallucinated tool name is discarded rather than dispatched.
+    """
+    if response.tool_calls or not isinstance(response.content, str):
+        return response
+
+    text = response.content.strip()
+    if "function" not in text or "{" not in text:
+        return response
+
+    recovered: list[dict[str, Any]] = []
+
+    decoder = json.JSONDecoder()
+
+    for start in (i for i, ch in enumerate(text) if ch == "{"):
+        chunk = text[start:]
+        parsed = None
+
+        # raw_decode reads one JSON value and ignores whatever follows, which
+        # covers the model wrapping its call in a markdown fence or adding a
+        # sentence after it.
+        try:
+            parsed, _ = decoder.raw_decode(chunk)
+        except json.JSONDecodeError:
+            # Models also truncate their own JSON mid-object. Try closing it.
+            for extra in range(1, 4):
+                try:
+                    parsed = json.loads(chunk + "}" * extra)
+                    break
+                except json.JSONDecodeError:
+                    continue
+
+        fn = parsed.get("function") if isinstance(parsed, dict) else None
+        if not isinstance(fn, dict):
+            continue
+
+        name = fn.get("name")
+        if name not in valid_names:
+            continue
+
+        # Zero-arg tools get invented arguments ("crop_type": "rice").
+        # Passing those through raises a validation error inside ToolNode,
+        # so drop them: the tool takes its parameters from the closure.
+        recovered.append(
+            {"name": name, "args": {}, "id": f"recovered_{len(recovered)}", "type": "tool_call"}
+        )
+        break
+
+    if not recovered:
+        return response
+
+    logger.warning(
+        "Recovered %d tool call(s) emitted as text; see _recover_text_tool_calls.",
+        len(recovered),
+    )
+    return AIMessage(content="", tool_calls=recovered, id=response.id)
+
+
 def create_agent_graph(crop_id: str, token: str):
     """Build the LangGraph agent with tools bound to the given crop and token."""
 
     tools = create_tools(crop_id, token)
     tool_node = ToolNode(tools)
+    tool_names = {t.name for t in tools}
 
-    model = ChatOpenAI(
-        model=OPENAI_MODEL,
-        api_key=OPENAI_API_KEY,
-        temperature=0,
-        max_tokens=1500,
-    ).bind_tools(tools)
+    model = _chat_model().bind_tools(tools)
 
     def agent_node(state: AgentState) -> dict[str, Any]:
         """The agent decides whether to call a tool or respond."""
@@ -175,6 +276,8 @@ def create_agent_graph(crop_id: str, token: str):
             messages = [SystemMessage(content=SYSTEM_PROMPT)] + list(messages)
 
         response = model.invoke(messages)
+        if isinstance(response, AIMessage):
+            response = _recover_text_tool_calls(response, tool_names)
         return {"messages": [response]}
 
     def should_continue(state: AgentState) -> Literal["tools", "end"]:
@@ -296,6 +399,37 @@ def _dict_to_messages(history: list[dict]) -> list[BaseMessage]:
     return messages
 
 
+def _crop_context(crop_id: str, token: str) -> str:
+    """Basic facts about the crop, fetched cheaply so the model knows what it is talking about.
+
+    Deliberately not the full crop-state computation - that is slow and only
+    needed when the farmer asks about condition. Failures return a short note
+    rather than raising, so chat still works without the context.
+    """
+    try:
+        crop = _get(f"/api/crops/{crop_id}", token)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not load crop context for %s: %s", crop_id, exc)
+        return f"[Crop context: crop id {crop_id}; details could not be loaded.]"
+
+    field_name = None
+    field_id = crop.get("field_id")
+    if field_id:
+        try:
+            field_name = _get(f"/api/fields/{field_id}", token).get("location_name")
+        except Exception:  # noqa: BLE001
+            field_name = None
+
+    parts = [f"crop: {crop.get('crop_type', 'unknown')}"]
+    if field_name:
+        parts.append(f"field: {field_name}")
+    if crop.get("sowing_date"):
+        parts.append(f"sown on {crop['sowing_date']}")
+    if crop.get("status"):
+        parts.append(f"status: {crop['status']}")
+    return "[Crop context - " + ", ".join(parts) + f". Crop id: {crop_id}.]"
+
+
 def chat(
     message: str,
     token: str,
@@ -334,7 +468,7 @@ def chat(
     messages = _dict_to_messages(history or [])
 
     # Add the new user message with crop context
-    content = f"{message}\n\n[Context: the farmer is currently viewing crop {crop_id}]"
+    content = f"{message}\n\n{_crop_context(crop_id, token)}"
     messages.append(HumanMessage(content=content))
 
     # Run the agent

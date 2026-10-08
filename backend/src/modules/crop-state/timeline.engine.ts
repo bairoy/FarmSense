@@ -111,11 +111,41 @@ export type TimelineResult = {
       day_number: number;
       note: string;
     }[];
+    /**
+     * Corrections applied from dated crop photos. Carries both numbers so the
+     * caller can show the farmer what the twin believed before the photo and
+     * what it believes now.
+     */
+    photo_observations: {
+      date: string;
+      day_number: number;
+      simulated_health: number;
+      corrected_health: number;
+      note: string;
+    }[];
   };
 };
 
+/**
+ * A disease photo only corrects the twin when it lowers health by more than
+ * this many points. Below it the difference is inside the noise of a leaf
+ * classifier and a weather-driven health score, and acting on it would make
+ * the estimate jitter with every photograph.
+ */
+const PHOTO_DISCREPANCY_THRESHOLD = 10;
+
+/**
+ * Disease does not vanish overnight, so a photo keeps informing the twin for
+ * this many days after it was taken, fading linearly. Matches the window the
+ * fusion layer already uses when it caps health from a diagnosis.
+ */
+const PHOTO_PERSISTENCE_DAYS = 7;
+
 /** What the satellite channel alone reports; farmer observations are merged in by the caller. */
-type SatelliteCorrection = Omit<TimelineResult["correction"], "farmer_observations">;
+type SatelliteCorrection = Omit<
+  TimelineResult["correction"],
+  "farmer_observations" | "photo_observations"
+>;
 
 const ISO = (d: Date) => d.toISOString().split("T")[0];
 
@@ -189,7 +219,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
   const endStr = today > sowingDate ? ISO(today) : startStr;
 
   // ---- Gather inputs in parallel; none of them depend on each other -------
-  const [weatherMap, powerMap, soil, irrigationRows, checkinRows] = await Promise.all([
+  const [weatherMap, powerMap, soil, irrigationRows, checkinRows, photoRows] = await Promise.all([
     getHistoricalWeather(latitude, longitude, startStr, endStr).catch((err) => {
       console.warn("Weather unavailable:", err.message);
       return new Map<string, WeatherDay>();
@@ -223,6 +253,16 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
       .not("responded_at", "is", null)
       .order("responded_at", { ascending: true })
       .then((r) => r.data ?? []),
+    // Dated crop photos. `disease_risk > 0` selects only diagnoses that cleared
+    // the confidence gate - `disease.service.ts` writes zero for a photo the
+    // classifier was not sure about, so an uncertain photo never moves the twin.
+    supabaseAdmin
+      .from("crop_states")
+      .select("recorded_date,health_score,confidence")
+      .eq("crop_instance_id", crop.id)
+      .eq("source", "disease_model")
+      .gt("disease_risk", 0)
+      .then((r) => r.data ?? []),
   ]);
 
   // Irrigation amounts are now read from the row rather than assumed to be a
@@ -245,6 +285,27 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     correctionsByDate.set(key, list);
   }
 
+  // Photo observations join the same per-day correction map, so they travel
+  // through exactly the code path a check-in does. Each one is spread over the
+  // following days with fading confidence.
+  for (const row of photoRows as any[]) {
+    if (row.health_score == null) continue;
+    const taken = new Date(row.recorded_date);
+    for (let k = 0; k <= PHOTO_PERSISTENCE_DAYS; k++) {
+      const day = new Date(taken);
+      day.setUTCDate(day.getUTCDate() + k);
+      const key = ISO(day);
+      const list = correctionsByDate.get(key) ?? [];
+      list.push({
+        health_score_ceiling: Number(row.health_score),
+        confidence: (row.confidence ?? 0.7) * (1 - k / (PHOTO_PERSISTENCE_DAYS + 1)),
+        origin: "photo",
+        min_discrepancy: PHOTO_DISCREPANCY_THRESHOLD,
+      });
+      correctionsByDate.set(key, list);
+    }
+  }
+
   // ---- PREDICT -----------------------------------------------------------
   let cumulativeGDD = 0;
   let depletion = 0;
@@ -261,6 +322,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
    */
   let gddOffset = 0;
 
+  const photoObservations: TimelineResult["correction"]["photo_observations"] = [];
   const farmerObservations: TimelineResult["correction"]["farmer_observations"] = [];
 
   const paddyConfig: PaddyConfig = {
@@ -474,11 +536,22 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
     // farmer sees nitrogen deficiency, pests and waterlogging that no weather
     // model can predict.
     for (const correction of todaysCorrections) {
+      const before = day.health_score;
       const health = applyHealthBounds(day.health_score, correction);
       if (health.moved > 0) {
         day.health_score = Math.round(health.value);
         day.status = statusFromScore(day.health_score);
-        farmerObservations.push({ date: dateStr, day_number: i + 1, note: health.note! });
+        if (correction.origin === "photo") {
+          photoObservations.push({
+            date: dateStr,
+            day_number: i + 1,
+            simulated_health: Math.round(before),
+            corrected_health: day.health_score,
+            note: health.note!,
+          });
+        } else {
+          farmerObservations.push({ date: dateStr, day_number: i + 1, note: health.note! });
+        }
       }
     }
 
@@ -493,13 +566,18 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
   // farmer channel is the only correction a paddy crop ever gets.
   const correction: TimelineResult["correction"] = {
     ...satellite,
-    applied: satellite.applied || farmerObservations.length > 0,
+    applied:
+      satellite.applied ||
+      farmerObservations.length > 0 ||
+      photoObservations.length > 0,
     source:
       satellite.applied && farmerObservations.length > 0
         ? "sentinel2+farmer"
         : farmerObservations.length > 0
           ? "farmer"
-          : satellite.source,
+          : photoObservations.length > 0 && !satellite.applied
+            ? "photo"
+            : satellite.source,
     note:
       farmerObservations.length > 0
         ? [satellite.applied ? satellite.note : null, farmerObservations.at(-1)!.note]
@@ -507,6 +585,7 @@ export const computeCropTimeline = async (crop: any): Promise<TimelineResult> =>
             .join(" ")
         : satellite.note,
     farmer_observations: farmerObservations,
+    photo_observations: photoObservations,
   };
 
   // ---- Confidence --------------------------------------------------------

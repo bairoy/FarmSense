@@ -46,7 +46,10 @@ const VH_EVALSCRIPT = `
 function setup() {
   return {
     input: [{ bands: ["VH", "VV", "dataMask"] }],
-    output: { bands: 3, sampleType: "FLOAT32" }
+    output: [
+      { id: "default", bands: 2 },
+      { id: "dataMask", bands: 1 }
+    ]
   };
 }
 
@@ -56,8 +59,10 @@ function toDb(linear) {
 }
 
 function evaluatePixel(sample) {
-  if (sample.dataMask !== 1) return [0, 0, 0];
-  return [toDb(sample.VH), toDb(sample.VV), 1];
+  return {
+    default: [toDb(sample.VH), toDb(sample.VV)],
+    dataMask: [sample.dataMask]
+  };
 }
 `;
 
@@ -79,7 +84,7 @@ export const fetchBackscatter = async (
   from: string,
   to: string
 ): Promise<Sentinel1Observation | null> => {
-  const values = await runStatisticalRequest({
+  const result = await runStatisticalRequest({
     geometry: boundary,
     from,
     to,
@@ -88,25 +93,23 @@ export const fetchBackscatter = async (
     extra: {
       acquisitionMode: "IW", // Interferometric Wide - the standard land mode
       polarization: "DV", // dual VV+VH
-      // Radiometric terrain correction. The Gangetic plain is flat so this changes
-      // little here, but leaving it off would make the same field read
-      // differently between ascending and descending passes.
-      orthorectify: true,
     },
+    // Radiometric terrain correction. The Gangetic plain is flat so this changes
+    // little here, but leaving it off would make the same field read
+    // differently between ascending and descending passes.
+    processing: { orthorectify: true, demInstance: "COPERNICUS_30" },
   });
 
-  if (!values || values.length < 3) return null;
+  if (!result) return null;
 
-  const [vhSum, vvSum, validFraction] = values;
-  const usable = validFraction > 0.3;
-
-  const vhDb = usable ? vhSum / validFraction : NaN;
+  const [vhDb, vvDb] = result.means;
+  const usable = result.validFraction > 0.3;
 
   return {
     source: "sentinel1",
-    date: to,
+    date: result.date,
     vhDb: usable ? Number(vhDb.toFixed(2)) : NaN,
-    vvDb: usable ? Number((vvSum / validFraction).toFixed(2)) : NaN,
+    vvDb: usable ? Number(vvDb.toFixed(2)) : NaN,
     likelyFlooded: usable && vhDb < FLOOD_VH_THRESHOLD_DB,
     usable,
   };

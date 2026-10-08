@@ -19,7 +19,10 @@ RUN pip install --no-cache-dir \
 
 # Copy application code
 COPY *.py ./
-COPY regions ./regions
+# classes.json is committed; rice_model.pth beside it is gitignored, so on a
+# clean clone only classes.json is copied and MODEL_URL downloads the weights
+# into the same folder at startup.
+COPY models ./models
 
 # Create non-root user
 RUN useradd -m -u 1001 farmsense

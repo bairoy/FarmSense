@@ -1,0 +1,42 @@
+{
+ "points": [
+  {
+   "lat": 26.4,
+   "lon": 83.2,
+   "s1_obs": 18,
+   "s1_windows": 18,
+   "vh_min": -27.16,
+   "vh_max": -15.88,
+   "vh_median": -23.715,
+   "n_below22": 11,
+   "detected": true,
+   "date": "2025-08-10",
+   "conf": 1,
+   "expl": "VH backscatter fell to -27.16 dB on 2025-08-10 (11.3 dB drop) and recovered 5.1 dB afterwards - the flooding-then-canopy signature of transplanted rice.",
+   "s2_usable": 14,
+   "s2_windows": 16,
+   "s2_ndvi_max": 0.507,
+   "s2_ndvi_min": 0.0608,
+   "s2_cloud_mean": 0.10486666666666666
+  },
+  {
+   "lat": 26.4,
+   "lon": 83.4,
+   "s1_obs": 17,
+   "s1_windows": 18,
+   "vh_min": -24.06,
+   "vh_max": -13.91,
+   "vh_median": -15.41,
+   "n_below22": 3,
+   "detected": false,
+   "date": null,
+   "conf": 0.2,
+   "expl": "Backscatter minimum falls at the edge of the observation window, so the V shape is not fully captured. Widen the date range.",
+   "s2_usable": 14,
+   "s2_windows": 16,
+   "s2_ndvi_max": 0.7741,
+   "s2_ndvi_min": 0.183,
+   "s2_cloud_mean": 0.06493333333333333
+  }
+ ]
+}

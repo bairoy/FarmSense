@@ -1,18 +1,26 @@
-import { useEffect, useState } from "react";
-import { useParams, useSearchParams, Outlet, Link } from "react-router-dom";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
+  Link,
+  Outlet,
+  useLocation,
+  useOutlet,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import {
+  Activity,
+  Camera,
+  ChartLine,
+  Droplets,
+  Leaf,
+  MessageCircle,
+  Satellite,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 import { getCropById, updateCrop, getCropTimeline } from "../crop.service";
-import type { Crop } from "../crop.types";
+import type { Crop, TimelineDay } from "../crop.types";
 import {
   getRecommendations,
   type RecommendationBundle,
@@ -21,23 +29,59 @@ import { RecommendationPanel } from "../../recommendations/RecommendationPanel";
 import { CheckinPrompt } from "../../recommendations/CheckinPrompt";
 import { ConfidenceBadge } from "../../../components/ConfidenceBadge";
 import { ChatPanel } from "../../chat";
-import type { TimelineDay } from "../crop.types";
+/**
+ * Recharts is ~350 KB of the bundle and is needed only if the farmer taps
+ * "Show timeline". Loading it up front costs every user on a rural connection
+ * a chart most of them never open.
+ */
+const SeasonChart = lazy(() =>
+  import("../components/SeasonChart").then((m) => ({ default: m.SeasonChart })),
+);
+import {
+  Alert,
+  Badge,
+  Button,
+  ButtonLink,
+  Card,
+  CardHeader,
+  LoadingPanel,
+  PageHeader,
+  Skeleton,
+  Stat,
+  TextField,
+} from "../../../components/ui";
 
 export default function CropDetail() {
   const { cropId } = useParams();
   const [searchParams] = useSearchParams();
   const editMode = searchParams.get("edit") === "true";
 
+  // Bring the opened sub-page (diagnose, log irrigation, ...) into view.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const openedChild = useOutlet() !== null;
+  const { pathname } = useLocation();
+  useEffect(() => {
+    if (!openedChild) return;
+    // Wait a frame so the child has rendered and the section has its height.
+    const id = requestAnimationFrame(() =>
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    );
+    return () => cancelAnimationFrame(id);
+  }, [pathname, openedChild]);
+
   const [crop, setCrop] = useState<Crop | null>(null);
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [bundle, setBundle] = useState<RecommendationBundle | null>(null);
   const [analysing, setAnalysing] = useState(false);
 
   const [timeline, setTimeline] = useState<TimelineDay[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
-  const [waterModel, setWaterModel] = useState<"depletion" | "paddy">("depletion");
+  const [waterModel, setWaterModel] = useState<"depletion" | "paddy">(
+    "depletion",
+  );
 
   const [chatOpen, setChatOpen] = useState(false);
 
@@ -52,7 +96,7 @@ export default function CropDetail() {
         setCrop(data);
         setDate(data?.sowing_date ?? "");
       })
-      .catch(console.error)
+      .catch(() => active && setError("Could not load this crop."))
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -75,10 +119,11 @@ export default function CropDetail() {
   const handleAnalyse = async () => {
     if (!cropId) return;
     setAnalysing(true);
+    setError(null);
     try {
       setBundle(await getRecommendations(cropId));
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setError("Could not analyse this crop right now. Please try again.");
     } finally {
       setAnalysing(false);
     }
@@ -91,280 +136,259 @@ export default function CropDetail() {
       const result = await getCropTimeline(cropId);
       setTimeline(result.timeline ?? []);
       setWaterModel(result.water_model ?? "depletion");
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setError("Could not load the season timeline.");
     } finally {
       setTimelineLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-green-700">
-        Loading crop data...
-      </div>
-    );
-  }
-
-  if (!crop) return <div className="p-8">No crop found</div>;
+  if (loading) return <LoadingPanel label="Loading crop" />;
+  if (!crop) return <Alert tone="error">{error ?? "No crop found."}</Alert>;
 
   const state = bundle?.state;
 
   return (
-    <div className="min-h-screen bg-green-50 px-4 sm:px-6 pt-24 pb-10">
-      <div className="max-w-6xl mx-auto space-y-6">
-        {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-6">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div>
-              <h2 className="text-3xl font-bold text-green-800 capitalize">
-                {crop.crop_type} 🌾
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Sown {crop.sowing_date} · status {crop.status}
-              </p>
-            </div>
-            {state && <ConfidenceBadge confidence={state.confidence} />}
+    <div className="space-y-6">
+      <PageHeader
+        back={{ to: `/field/${crop.field_id}/crops`, label: "Back to field" }}
+        eyebrow="Crop"
+        title={<span className="capitalize">{crop.crop_type}</span>}
+        description={
+          <span className="flex flex-wrap items-center gap-2">
+            <span>Sown {crop.sowing_date}</span>
+            <Badge tone={crop.status === "active" ? "field" : "neutral"}>
+              {crop.status}
+            </Badge>
+          </span>
+        }
+      />
+
+      {error && <Alert tone="error">{error}</Alert>}
+
+      {/* The check-in renders nothing unless one is actually due. It sits high
+          on the page because it is the cheapest real observation the system
+          can get, and it expires. */}
+      {cropId && <CheckinPrompt cropId={cropId} />}
+
+      {state && (
+        <div className="space-y-3">
+          {/* These three numbers all come out of the model, so the badge that
+              says how much to trust them belongs with them - not only down in
+              the recommendations panel. */}
+          <div className="flex justify-end">
+            <ConfidenceBadge confidence={state.confidence} />
           </div>
 
-          {state && (
-            <div className="mt-5 grid sm:grid-cols-3 gap-4">
-              <Stat
-                label="Growth stage"
-                value={state.phase.replace(/_/g, " ")}
-                sub={`day ${state.day_number} · ${state.progress_pct}% of season`}
-              />
-              <Stat
-                label="Health"
-                value={`${state.health_score}/100`}
-                sub={state.status.replace("_", " ")}
-              />
-              <Stat
-                label="Water"
-                value={
-                  state.water.model === "paddy"
-                    ? `${state.water.ponded_depth_mm?.toFixed(0) ?? 0} mm standing`
-                    : `${state.water.depletion_mm?.toFixed(0) ?? 0} mm depleted`
-                }
-                sub={
-                  state.water.model === "paddy"
-                    ? state.water.flooded
-                      ? "flooded"
-                      : `dry ${state.water.dry_days ?? 0} day(s)`
-                    : `stress from ${state.water.RAW_mm?.toFixed(0) ?? "?"} mm`
-                }
-              />
-            </div>
-          )}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Stat
+              icon={<Leaf className="h-4 w-4" />}
+              label="Growth stage"
+              value={state.phase.replace(/_/g, " ")}
+              sub={`Day ${state.day_number} · ${state.progress_pct}% of the season`}
+            />
+            <Stat
+              icon={<Activity className="h-4 w-4" />}
+              label="Health"
+              value={`${state.health_score}/100`}
+              sub={state.status.replace(/_/g, " ")}
+              tone={
+                state.health_score >= 70
+                  ? "field"
+                  : state.health_score >= 45
+                    ? "harvest"
+                    : "alert"
+              }
+            />
+            <Stat
+              icon={<Droplets className="h-4 w-4" />}
+              label="Water"
+              value={
+                state.water.model === "paddy"
+                  ? `${state.water.ponded_depth_mm?.toFixed(0) ?? 0} mm standing`
+                  : `${state.water.depletion_mm?.toFixed(0) ?? 0} mm depleted`
+              }
+              sub={
+                state.water.model === "paddy"
+                  ? state.water.flooded
+                    ? "Field is flooded"
+                    : `Dry for ${state.water.dry_days ?? 0} day(s)`
+                  : `Stress from ${state.water.RAW_mm?.toFixed(0) ?? "?"} mm`
+              }
+              tone="water"
+            />
+          </div>
         </div>
+      )}
 
-        {cropId && <CheckinPrompt cropId={cropId} />}
-
-        {/* EDIT */}
-        {editMode && (
-          <div className="bg-white p-5 rounded-2xl border border-green-100 shadow-sm">
-            <h3 className="font-semibold text-green-800 mb-2">Update Sowing Date</h3>
-            <p className="text-xs text-gray-500 mb-3">
-              Every growth stage and fertilizer timing is anchored to this date.
-            </p>
-            <div className="flex gap-3 items-center flex-wrap">
-              <input
-                type="date"
-                className="border p-2 rounded-md"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-              />
-              <button
-                onClick={handleUpdate}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-              >
-                Update
-              </button>
-            </div>
+      {editMode && (
+        <Card className="p-5 sm:p-6">
+          <CardHeader
+            title="Correct the sowing date"
+            description="Every growth stage and fertilizer timing is anchored to this date, so changing it recalculates the whole season."
+          />
+          <div className="mt-4 flex flex-wrap items-end gap-3">
+            <TextField
+              label="Sowing date"
+              type="date"
+              value={date}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDate(e.target.value)}
+              className="max-w-52"
+            />
+            <Button onClick={handleUpdate}>Save date</Button>
           </div>
+        </Card>
+      )}
+
+      {/* ---- Recommendations ---- */}
+      <Card className="p-5 sm:p-6">
+        <CardHeader
+          icon={<Sparkles className="h-5 w-5" />}
+          title="Today's guidance"
+          description="Water and fertilizer for this crop, with the confidence behind each number."
+          action={
+            <Button onClick={handleAnalyse} disabled={analysing}>
+              {analysing ? "Analysing..." : bundle ? "Refresh" : "Analyse crop"}
+            </Button>
+          }
+        />
+
+        {!bundle && !analysing && (
+          <p className="mt-5 rounded-xl bg-clay-50 p-4 text-sm text-clay-600">
+            Nothing is calculated until you ask. The model pulls this
+            field&rsquo;s weather, its soil profile and the most recent
+            satellite pass, then works out what the crop needs.
+          </p>
         )}
 
-        {/* ACTIONS */}
-        <div className="flex flex-wrap gap-3">
-          <NavButton to="diagnose" className="bg-emerald-600 hover:bg-emerald-700">
-            📷 Diagnose from photo
-          </NavButton>
-          <NavButton to="fertilizer" className="bg-blue-600 hover:bg-blue-700">
-            Fertilizer History
-          </NavButton>
-          <NavButton to="fertilizer/new" className="bg-green-600 hover:bg-green-700">
-            Log Fertilizer
-          </NavButton>
-          <NavButton to="irrigation" className="bg-blue-600 hover:bg-blue-700">
-            Irrigation History
-          </NavButton>
-          <NavButton to="irrigation/new" className="bg-purple-600 hover:bg-purple-700">
-            Log Irrigation
-          </NavButton>
-        </div>
+        {bundle && (
+          <div className="mt-5 space-y-5">
+            {state && state.stress_factors.length > 0 && (
+              <Alert tone="warning" title="Current stresses">
+                <ul className="mt-1 list-disc space-y-1 pl-4">
+                  {state.stress_factors.map((factor, i) => (
+                    <li key={i}>{factor}</li>
+                  ))}
+                </ul>
+              </Alert>
+            )}
 
-        {/* RECOMMENDATIONS */}
-        <div className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm">
-          <button
-            onClick={handleAnalyse}
-            disabled={analysing}
-            className="bg-yellow-500 hover:bg-yellow-600 disabled:opacity-50 text-white px-5 py-2 rounded-lg transition"
-          >
-            {analysing ? "Analysing..." : "Analyse crop & get recommendations"}
-          </button>
-
-          {bundle && (
-            <div className="mt-6 space-y-5">
-              {state && state.stress_factors.length > 0 && (
-                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-sm">
-                  <p className="font-medium text-orange-900">Current stresses</p>
-                  <ul className="mt-2 list-disc ml-5 space-y-1 text-orange-900">
-                    {state.stress_factors.map((factor, i) => (
-                      <li key={i}>{factor}</li>
-                    ))}
-                  </ul>
+            {state?.correction.note && (
+              <div className="flex gap-3 rounded-xl border border-water-200 bg-water-50 p-4">
+                <Satellite className="mt-0.5 h-5 w-5 shrink-0 text-water-600" />
+                <div className="text-sm text-water-900">
+                  <p className="font-semibold">Satellite check</p>
+                  <p className="mt-0.5">{state.correction.note}</p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {state?.correction.note && (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-sm text-indigo-900">
-                  <p className="font-medium">Satellite check</p>
-                  <p className="mt-1">{state.correction.note}</p>
-                </div>
-              )}
+            <RecommendationPanel bundle={bundle} />
 
-              <RecommendationPanel bundle={bundle} />
-
-              {state && (
-                <p className="text-xs text-gray-500">
-                  Soil data:{" "}
-                  {state.soil.source === "soilgrids"
-                    ? `ISRIC SoilGrids (${state.soil.textureClass ?? "measured"}, ${state.soil.tawMmPerM.toFixed(0)} mm/m available water)`
-                    : "district default — no per-field soil measurement available"}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* TIMELINE */}
-        <div className="bg-white p-6 rounded-2xl border border-green-100 shadow-sm">
-          <button
-            onClick={handleTimeline}
-            disabled={timelineLoading}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition"
-          >
-            {timelineLoading ? "Loading..." : "Show season timeline"}
-          </button>
-
-          {timeline.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-xl font-semibold mb-1 text-green-800">
-                Season timeline 📈
-              </h3>
-              <p className="text-xs text-gray-500 mb-4">
-                {waterModel === "paddy"
-                  ? "Rice: standing water depth in mm. A paddy is modelled by ponded depth, not soil moisture."
-                  : "Wheat: root-zone depletion in mm. Stress begins where depletion crosses RAW."}
+            {state && (
+              <p className="text-xs text-clay-500">
+                Soil data:{" "}
+                {state.soil.source === "soilgrids"
+                  ? `ISRIC SoilGrids (${state.soil.textureClass ?? "measured"}, ${state.soil.tawMmPerM.toFixed(0)} mm/m available water)`
+                  : "district default — no per-field soil measurement available"}
               </p>
+            )}
+          </div>
+        )}
+      </Card>
 
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={timeline}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day_number" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip />
-                  <Legend />
+      {/* ---- Actions ---- */}
+      <section>
+        <h2 className="mb-3 text-lg font-bold text-clay-900">
+          Record and check
+        </h2>
 
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="health_score"
-                    name="Health"
-                    stroke="#16a34a"
-                    dot={false}
-                  />
-
-                  {/* The chart previously plotted `soil_moisture`, a field the
-                      engine no longer emits - it silently rendered an empty
-                      line. Each water model now plots its own real state
-                      variable. */}
-                  {waterModel === "paddy" ? (
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="ponded_depth_mm"
-                      name="Standing water (mm)"
-                      stroke="#2563eb"
-                      dot={false}
-                    />
-                  ) : (
-                    <>
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="soil_depletion"
-                        name="Depletion (mm)"
-                        stroke="#2563eb"
-                        dot={false}
-                      />
-                      <Line
-                        yAxisId="right"
-                        type="monotone"
-                        dataKey="RAW"
-                        name="Stress threshold (mm)"
-                        stroke="#dc2626"
-                        strokeDasharray="4 4"
-                        dot={false}
-                      />
-                    </>
-                  )}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ActionCard
+            to="diagnose"
+            icon={<Camera className="h-5 w-5" />}
+            title="Diagnose from a photo"
+            body="Photograph an affected leaf and get an identification."
+            highlight
+          />
+          <ActionCard
+            to="irrigation/new"
+            icon={<Droplets className="h-5 w-5" />}
+            title="Log irrigation"
+            body="Recording what you watered keeps the water balance honest."
+          />
+          <ActionCard
+            to="fertilizer/new"
+            icon={<Leaf className="h-5 w-5" />}
+            title="Log fertilizer"
+            body="What you applied, and when."
+          />
         </div>
 
+        <div className="mt-3 flex flex-wrap gap-2">
+          <ButtonLink to="irrigation" variant="secondary" size="sm">
+            Irrigation history
+          </ButtonLink>
+          <ButtonLink to="fertilizer" variant="secondary" size="sm">
+            Fertilizer history
+          </ButtonLink>
+        </div>
+      </section>
+
+      {/* ---- Timeline ---- */}
+      <Card className="p-5 sm:p-6">
+        <CardHeader
+          icon={<ChartLine className="h-5 w-5" />}
+          title="Season timeline"
+          description="Every simulated day since sowing."
+          action={
+            timeline.length === 0 ? (
+              <Button
+                variant="secondary"
+                onClick={handleTimeline}
+                disabled={timelineLoading}
+              >
+                {timelineLoading ? "Loading..." : "Show timeline"}
+              </Button>
+            ) : undefined
+          }
+        />
+
+        {timeline.length > 0 && (
+          <div className="mt-6">
+            <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+              <SeasonChart timeline={timeline} waterModel={waterModel} />
+            </Suspense>
+          </div>
+        )}
+      </Card>
+
+      {/* Nested routes: diagnosis, the two logs and their histories. They render
+          far below the action cards, so the section scrolls itself into view
+          when one opens - otherwise the click appears to do nothing. */}
+      <div ref={panelRef} className="scroll-mt-20">
         <Outlet />
       </div>
 
-      {/* Chat button and panel */}
       {cropId && (
         <>
           <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className="fixed bottom-4 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg hover:bg-green-700 transition flex items-center justify-center z-40"
-            aria-label={chatOpen ? "Close chat" : "Open chat"}
+            onClick={() => setChatOpen((open) => !open)}
+            aria-label={
+              chatOpen ? "Close crop assistant" : "Open crop assistant"
+            }
+            aria-expanded={chatOpen}
+            // Sits above the phone tab bar rather than on top of it.
+            className="fixed bottom-24 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-field-700 text-white shadow-float transition-colors hover:bg-field-800 sm:bottom-6"
           >
             {chatOpen ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <X className="h-6 w-6" />
             ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4.848 2.771A49.144 49.144 0 0 1 12 2.25c2.43 0 4.817.178 7.152.52 1.978.292 3.348 2.024 3.348 3.97v6.02c0 1.946-1.37 3.678-3.348 3.97a48.901 48.901 0 0 1-3.476.383.39.39 0 0 0-.297.17l-2.755 4.133a.75.75 0 0 1-1.248 0l-2.755-4.133a.39.39 0 0 0-.297-.17 48.9 48.9 0 0 1-3.476-.384c-1.978-.29-3.348-2.024-3.348-3.97V6.741c0-1.946 1.37-3.68 3.348-3.97Z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <MessageCircle className="h-6 w-6" />
             )}
           </button>
+
           <ChatPanel
             cropId={cropId}
             isOpen={chatOpen}
@@ -376,31 +400,39 @@ export default function CropDetail() {
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="bg-green-50 rounded-xl p-4">
-      <p className="text-xs text-gray-600 uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-semibold text-green-900 capitalize mt-0.5">{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-0.5">{sub}</p>}
-    </div>
-  );
-}
-
-function NavButton({
+function ActionCard({
   to,
-  className,
-  children,
+  icon,
+  title,
+  body,
+  highlight = false,
 }: {
   to: string;
-  className: string;
-  children: React.ReactNode;
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  highlight?: boolean;
 }) {
   return (
     <Link
       to={to}
-      className={`${className} text-white px-4 py-2 rounded-lg transition text-sm`}
+      className={`flex gap-3 rounded-xl border p-4 transition-colors ${
+        highlight
+          ? "border-field-300 bg-field-50 hover:border-field-500"
+          : "border-clay-200 bg-white hover:border-field-300 hover:bg-field-50/40"
+      }`}
     >
-      {children}
+      <span
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+          highlight ? "bg-field-700 text-white" : "bg-field-100 text-field-700"
+        }`}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block font-bold text-clay-900">{title}</span>
+        <span className="mt-0.5 block text-sm text-clay-600">{body}</span>
+      </span>
     </Link>
   );
 }

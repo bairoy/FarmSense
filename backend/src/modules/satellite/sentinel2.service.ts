@@ -33,7 +33,10 @@ const NDVI_EVALSCRIPT = `
 function setup() {
   return {
     input: [{ bands: ["B04", "B08", "B11", "SCL", "dataMask"] }],
-    output: { bands: 4, sampleType: "FLOAT32" }
+    output: [
+      { id: "default", bands: 2 },
+      { id: "dataMask", bands: 1 }
+    ]
   };
 }
 
@@ -41,15 +44,12 @@ function evaluatePixel(sample) {
   const badScl = [3, 8, 9, 10, 11];
   const isValid = sample.dataMask === 1 && badScl.indexOf(sample.SCL) < 0;
 
-  if (!isValid) return [0, 0, 0, 0];
-
   const ndvi = (sample.B08 - sample.B04) / (sample.B08 + sample.B04);
   const ndwi = (sample.B08 - sample.B11) / (sample.B08 + sample.B11);
 
-  // Band 4 is the valid-pixel count. Sentinel Hub averages the 1x1 output over
-  // the polygon, so dividing bands 1-3 by it recovers the true mean over only
-  // the pixels that passed the cloud mask.
-  return [ndvi, ndwi, 1, 1];
+  // dataMask = 0 removes cloudy pixels from the polygon mean; the Statistical
+  // API reports how many were removed, which becomes cloudFraction below.
+  return { default: [ndvi, ndwi], dataMask: [isValid ? 1 : 0] };
 }
 `;
 
@@ -69,7 +69,7 @@ export const fetchNdvi = async (
   to: string,
   maxCloudCoverPct = 60
 ): Promise<Sentinel2Observation | null> => {
-  const values = await runStatisticalRequest({
+  const result = await runStatisticalRequest({
     geometry: boundary,
     from,
     to,
@@ -81,22 +81,22 @@ export const fetchNdvi = async (
     },
   });
 
-  if (!values || values.length < 3) return null;
+  if (!result) return null;
 
-  const [ndviSum, ndwiSum, validFraction] = values;
+  const [ndvi, ndwi] = result.means;
 
   // If almost every pixel was masked out, the mean is meaningless. Returning
   // an unusable observation (rather than null) is deliberate: the fusion step
   // needs to know we tried and failed, so it can widen uncertainty instead of
   // assuming no news is good news.
-  const usable = validFraction > 0.3;
+  const usable = result.validFraction > 0.3;
 
   return {
     source: "sentinel2",
-    date: to,
-    ndvi: usable ? Number((ndviSum / validFraction).toFixed(4)) : NaN,
-    ndwi: usable ? Number((ndwiSum / validFraction).toFixed(4)) : NaN,
-    cloudFraction: Number((1 - validFraction).toFixed(3)),
+    date: result.date,
+    ndvi: usable ? Number(ndvi.toFixed(4)) : NaN,
+    ndwi: usable ? Number(ndwi.toFixed(4)) : NaN,
+    cloudFraction: Number((1 - result.validFraction).toFixed(3)),
     usable,
   };
 };
