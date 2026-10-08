@@ -21,11 +21,6 @@
         "foregroundImage": "./assets/images/farmsense_app.png"
       },
       "predictiveBackGestureEnabled": false,
-      "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyB7BazHTvju1pm55rJTTbOK6RQgApl5xNs"
-        }
-      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
