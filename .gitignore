@@ -49,3 +49,9 @@ backend/experiments/paper/preview*/
 FALLSEM*Evaluation-rubrics.pdf
 REVIEW_II_PRESENTATION.md
 tarpt-final-report*.pdf
+
+# Kept locally only, not published to GitHub
+/FarmSense_Research_Paper.docx
+/FarmSense_Research_Paper.pdf
+/IMPLEMENTATION_PLAN.md
+/projectreport.md
